@@ -1,5 +1,5 @@
 {
   "place": "none",
   "title": "herdr-flow",
-  "overlay": { "kind": "popup", "at": "top", "offset": 40, "width": 760, "frame": "none" }
+  "overlay": { "kind": "popup", "at": "top", "offset": 40, "width": 780, "frame": "none" }
 }

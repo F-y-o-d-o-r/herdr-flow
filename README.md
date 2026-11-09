@@ -38,14 +38,14 @@ Pressing the leader twice sends it to the terminal. `/` searches the sheet.
 | `e` | nvim + file tree, nvim zoomed (needs herdr-nvim) |
 | `m` | git panel · `q` agent history · `o` / `O` Obsidian · `t` themes · `a` agent waiting |
 
-Rows for mods you don't have (herdr-nvim, Redline, Pipelines, Obsidian, Sheepdog, Agent History…)
+Rows for mods you don't have (herdr-nvim, Redline, Obsidian, Sheepdog, Agent History…)
 are hidden.
 
 **Your own keys:** put rows in `~/.config/herdr-app/herdr-flow.bindings.json`, same format as
 `mod/leader/bindings.json` (`"key": [action, label, direct shortcut, section]`); `null` removes a
 key. Updates of the mod never touch this file.
 
-Actions: an app command (`tab.new`, `tab.select:1`), a mod command (`pipelines.open`),
+Actions: an app command (`tab.new`, `tab.select:1`), a mod command (`cloudflare-deploys.open`),
 `screen:<git|repo|pull|jira>`, `panel:<id>` (a side-panel child), `repo:<action>` (pick a repo
 first), `send-key`, `nvim-zoom`, `sheepdog-toggle`.
 

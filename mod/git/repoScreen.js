@@ -59,6 +59,7 @@ async function moveTo(path) {
     const r = await hc(["send", terminal, `cd ${quote(path)} && clear\r`]);
     if (r.code !== 0)
       return notify({ title: "Repo", body: `Could not cd: ${(r.stderr || r.stdout).trim()}`, level: "error" });
+    await waitForPane((p) => p.tab === tab && p.terminal === terminal, path);
   } else {
     run("terminal.open", { folder: path, place: "right" });
     terminal = await waitForPane((p) => p.tab === tab && p.terminal, path);

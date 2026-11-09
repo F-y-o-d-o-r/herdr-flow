@@ -18,6 +18,15 @@ const SECTIONS = {
   git: "git",
   tools: "tools",
 };
+/** @type {Record<string, number>} */
+const KEY_WIDTHS = {
+  tabs: 32,
+  panes: 64,
+  spaces: 92,
+  agents: 32,
+  git: 32,
+  tools: 32,
+};
 const ORDER = ["tabs", "spaces", "panes", "agents", "tools", "git"]; // reading order on screen
 
 /**
@@ -63,8 +72,9 @@ export function orderedHits(bindings, query) {
  * @param {Theme} t
  * @param {SheetRow} r
  * @param {{ q: string, current: string | null }} search
+ * @param {number} [keyWidth]
  */
-function rowView(t, r, { q, current }) {
+function rowView(t, r, { q, current }, keyWidth = 32) {
   const on = Boolean(q) && matches(r, q);
   const faded = Boolean(q) && !on;
   const chip = (/** @type {string} */ key) => div().px(5).rounded(4).bg(t.raised).text_color(t.foreground).child(key);
@@ -77,10 +87,12 @@ function rowView(t, r, { q, current }) {
     .border(1)
     .border_color(Boolean(current) && r.action === current ? t.accent : t.popover)
     .when(on, (el) => el.bg(t.selected))
-    .child(h_flex().w(92).flex_none().gap(2).children(r.keys.map(chip)))
+    .child(h_flex().w(keyWidth).flex_none().gap(2).children(r.keys.map(chip)))
     .child(
       div()
         .flex_1()
+        .min_w(0)
+        .truncate()
         .text_color(on ? t.accent : faded ? t.dim : t.foreground)
         .child(r.label),
     )
@@ -99,9 +111,9 @@ function block(t, title, columns, draw) {
     .child(div().text_size(11).text_color(t.dim).child(title))
     .child(
       h_flex()
-        .gap(28)
+        .gap(20)
         .items_start()
-        .children(columns.map((ids) => v_flex().flex_1().children(ids.map(draw)))),
+        .children(columns.map((ids) => v_flex().flex_1().min_w(0).children(ids.map(draw)))),
     );
 }
 
@@ -128,7 +140,7 @@ export function cheatSheet(t, { bindings, query, current, warning }) {
       .gap(2)
       .pb(8)
       .child(div().pb(2).text_size(10.5).font_semibold().text_color(t.muted).child(SECTIONS[id]))
-      .children([...groups[id].values()].map((r) => rowView(t, r, { q, current })));
+      .children([...groups[id].values()].map((r) => rowView(t, r, { q, current }, KEY_WIDTHS[id] ?? 32)));
   return v_flex()
     .w_full()
     .p(14)

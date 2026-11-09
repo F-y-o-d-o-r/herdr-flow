@@ -18,7 +18,7 @@ test("parseOverrides: bad JSON gives defaults and a warning", () => {
   assert.match(r.warning, /^herdr-flow\.bindings\.json:/);
 });
 
-const env = { commands: new Set(["tab.new", "pipelines.open", "layout.toggle"]), mods: new Set(["pipelines"]) };
+const env = { commands: new Set(["tab.new", "agent-history.open", "layout.toggle"]), mods: new Set(["agent-history"]) };
 
 test("isActionAvailable: mod.open of a missing mod is hidden", () => {
   assert.equal(isActionAvailable("mod.open:redline", env), false);
@@ -30,7 +30,7 @@ test("isActionAvailable: our own screens, panels, send-key are always there", ()
 });
 
 test("isActionAvailable: a mod command needs that mod", () => {
-  assert.equal(isActionAvailable("pipelines.open", env), true);
+  assert.equal(isActionAvailable("agent-history.open", env), true);
   assert.equal(isActionAvailable("herdr-nvim.pick", env), false);
 });
 
