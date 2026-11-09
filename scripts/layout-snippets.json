@@ -1,0 +1,29 @@
+{
+  "router: an invisible block for direct keys (add to the root node's \"floating\" list; optional, see README)": {
+    "id": "herdr-flow-router",
+    "content": {
+      "mod": "herdr-flow",
+      "props": {
+        "role": "router"
+      }
+    },
+    "edge": "bottom",
+    "align": "start"
+  },
+  "Jira side panel (add next to your main tab block, e.g. in the work row)": {
+    "id": "jira-view",
+    "type": "block",
+    "size": {
+      "px": 420
+    },
+    "min": 300,
+    "max": 800,
+    "hidden": true,
+    "content": {
+      "mod": "herdr-flow",
+      "props": {
+        "view": "panel"
+      }
+    }
+  }
+}

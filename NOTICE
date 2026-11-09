@@ -1,0 +1,7 @@
+herdr-flow
+
+The leader screen (mod/leader/) started as a fork of `mods/prefix` from
+DanielFGray/herdr-config (https://github.com/DanielFGray/herdr-config),
+Apache License 2.0, upstream commit d5baac2043c9. Changed: grouped cheat
+sheet, direct-shortcut column, search, panel / repo / screen / send-key
+actions, Russian layout mapping, user overrides file.

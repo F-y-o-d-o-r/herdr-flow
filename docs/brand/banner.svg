@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 220" width="100%" height="100%">
+  <defs>
+    <linearGradient id="b-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080C14" />
+      <stop offset="100%" stop-color="#030508" />
+    </linearGradient>
+
+    <!-- Speed Streamline Gradient -->
+    <linearGradient id="b-stream" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00FFA3" stop-opacity="0" />
+      <stop offset="40%" stop-color="#00F5FF" stop-opacity="0.8" />
+      <stop offset="85%" stop-color="#00FFA3" stop-opacity="1" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.95" />
+    </linearGradient>
+
+    <linearGradient id="b-azure" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0" />
+      <stop offset="60%" stop-color="#60A5FA" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#00F5FF" stop-opacity="1" />
+    </linearGradient>
+
+    <linearGradient id="brand-text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00FFA3" />
+      <stop offset="50%" stop-color="#00F5FF" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+
+    <filter id="b-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Banner Base Card -->
+  <rect x="2" y="2" width="956" height="216" rx="24" fill="url(#b-bg)" stroke="#151D2A" stroke-width="2" />
+
+  <!-- Speed accent line on top -->
+  <path d="M 24 2 L 340 2" stroke="url(#brand-text-grad)" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Logo Mark (Left, 140x140) -->
+  <g transform="translate(48, 40)">
+    <rect width="140" height="140" rx="32" fill="#0B101B" stroke="#1F2A3D" stroke-width="2" />
+    
+    <!-- Miniaturized Laminar Flow Streamlines -->
+    <g transform="translate(10, 10) scale(0.24)" filter="url(#b-glow)">
+      <path d="M 60 170 C 170 170, 220 130, 290 130 C 360 130, 400 170, 452 170" fill="none" stroke="url(#b-azure)" stroke-width="12" stroke-linecap="round" />
+      <path d="M 80 220 C 180 220, 220 190, 280 190 C 350 190, 390 220, 452 220" fill="none" stroke="url(#b-stream)" stroke-width="20" stroke-linecap="round" />
+      <path d="M 120 256 C 210 256, 240 256, 310 256 C 380 256, 420 256, 452 256" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" />
+      <path d="M 80 292 C 180 292, 220 322, 280 322 C 350 322, 390 292, 452 292" fill="none" stroke="url(#b-stream)" stroke-width="20" stroke-linecap="round" />
+      <path d="M 60 342 C 170 342, 220 382, 290 382 C 360 382, 400 342, 452 342" fill="none" stroke="url(#b-azure)" stroke-width="12" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="216" y="110" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif" font-size="54" font-weight="800" letter-spacing="-1.5">
+    <tspan fill="#F8FAFC">Herdr</tspan><tspan fill="url(#brand-text-grad)">Flow</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="218" y="148" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="450" fill="#94A3B8" letter-spacing="-0.2">
+    Keyboard-first velocity for the Herdr desktop app
+  </text>
+
+  <!-- Feature Tags on Right -->
+  <g transform="translate(680, 84)">
+    <rect x="0" y="0" width="88" height="28" rx="14" fill="#0E1522" stroke="#1E293B" stroke-width="1" />
+    <text x="44" y="18" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#00FFA3" text-anchor="middle">ctrl-a</text>
+
+    <rect x="96" y="0" width="68" height="28" rx="14" fill="#0E1522" stroke="#1E293B" stroke-width="1" />
+    <text x="130" y="18" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#00F5FF" text-anchor="middle">Git</text>
+
+    <rect x="172" y="0" width="68" height="28" rx="14" fill="#0E1522" stroke="#1E293B" stroke-width="1" />
+    <text x="206" y="18" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#38BDF8" text-anchor="middle">Jira</text>
+  </g>
+</svg>
