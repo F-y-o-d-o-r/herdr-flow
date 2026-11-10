@@ -36,7 +36,7 @@ Pressing the leader twice sends it to the terminal. `/` searches the sheet.
 | `J` | Jira |
 | `i` | Jira side panel |
 | `e` | nvim + file tree, nvim zoomed (needs herdr-nvim) |
-| `m` | git panel · `q` agent history · `o` / `O` Obsidian · `t` themes · `a` agent waiting |
+| `G` | git panel · `q` agent history · `o` / `O` Obsidian · `t` themes · `a` agent waiting |
 
 Rows for mods you don't have (herdr-nvim, Redline, Obsidian, Sheepdog, Agent History…)
 are hidden.

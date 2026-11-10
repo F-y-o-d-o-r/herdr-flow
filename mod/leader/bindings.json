@@ -50,7 +50,7 @@
   "ctrl-;": ["send-key", "send ctrl-; to terminal", "", "spaces"],
   "-": ["pane.split:down", "split down", "cmd-shift-d", "panes"],
   "|": ["pane.split:right", "split right", "cmd-d", "panes"],
-  "m": ["panel:git", "git panel (all repos)", "", "git"],
+  "G": ["panel:git", "git panel (all repos)", "", "git"],
   "q": ["mod.open:agent-history", "agent history: past sessions (search, resume)", "cmd-y", "agents"],
   "P": ["screen:pull", "pull all repos (ff-only)", "", "git"],
   "O": ["layout.toggle:obsidian-panel", "obsidian notes panel (shift-enter: nvim)", "cmd-shift-o", "tools"],
