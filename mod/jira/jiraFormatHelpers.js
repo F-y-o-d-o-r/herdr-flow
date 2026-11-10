@@ -6,6 +6,8 @@
 /** @typedef {import("../types.js").Checklist} Checklist */
 /** @typedef {import("../types.js").Attachment} Attachment */
 /** @typedef {import("../types.js").CustomField} CustomField */
+/** @typedef {import("../types.js").PinnedField} PinnedField */
+/** @typedef {import("./counterHelpers.js").PinnedFieldConfig} PinnedFieldConfig */
 /** @typedef {{ text?: string, image?: string }} TextPart */
 
 /**
@@ -194,6 +196,29 @@ export function customFieldsFrom(fields, names) {
     .filter((f) => f.text && !/^\d+\|[a-z0-9]+:/.test(f.text));
 }
 
+/**
+ * Pinned fields resolved from Jira issue fields and custom field names.
+ * @param {Record<string, any>} fields Jira's issue fields JSON
+ * @param {Record<string, string>} names field id -> name map
+ * @param {PinnedFieldConfig[]} configs
+ * @returns {PinnedField[]}
+ */
+export function pinnedFieldsFrom(fields, names, configs) {
+  if (!Array.isArray(configs) || !configs.length) return [];
+  const entries = Object.entries(names ?? {});
+  /** @type {PinnedField[]} */
+  const out = [];
+  for (const cfg of configs) {
+    const match = entries.find(([id, n]) => (cfg.id ? id === cfg.id : n.toLowerCase() === cfg.name.toLowerCase()));
+    const id = match?.[0] ?? cfg.id;
+    if (!id) continue;
+    const name = names?.[id] ?? match?.[1] ?? cfg.name;
+    const raw = fields?.[id];
+    out.push({ id, name, value: raw !== null && raw !== undefined ? fieldText(raw) : "", type: cfg.type });
+  }
+  return out;
+}
+
 const projectOf = (/** @type {string} */ key) => key?.split("-")[0] ?? null;
 
 /**
@@ -240,12 +265,11 @@ export function agentPrompt(i) {
  */
 export function priorityMeta(priority) {
   if (!priority) return null;
-  const text = priority.toLowerCase();
-  if (/highest|blocker|critical/.test(text)) return { icon: "⇈", colorKey: "ansi1" };
-  if (/high/.test(text)) return { icon: "↑", colorKey: "ansi1" };
-  if (/lowest/.test(text)) return { icon: "⇊", colorKey: "muted" };
-  if (/low/.test(text)) return { icon: "↓", colorKey: "ansi4" };
-  return { icon: "=", colorKey: "ansi3" };
+  const s = priority.toLowerCase();
+  if (/highest|blocker|critical/.test(s)) return { icon: "⇈", colorKey: "ansi1" };
+  if (/high/.test(s)) return { icon: "↑", colorKey: "ansi1" };
+  if (/lowest/.test(s)) return { icon: "⇊", colorKey: "muted" };
+  return /low/.test(s) ? { icon: "↓", colorKey: "ansi4" } : { icon: "=", colorKey: "ansi3" };
 }
 
 /**
@@ -254,23 +278,23 @@ export function priorityMeta(priority) {
  */
 export function issueTypeMeta(issueType) {
   if (!issueType) return null;
-  const text = issueType.toLowerCase();
-  if (/bug|ошиб|баг/.test(text)) return { icon: "●", colorKey: "ansi1" };
-  if (/story|истор/.test(text)) return { icon: "◈", colorKey: "ansi2" };
-  if (/epic|эпик/.test(text)) return { icon: "⚡", colorKey: "ansi5" };
-  return { icon: "✓", colorKey: "ansi4" };
+  const s = issueType.toLowerCase();
+  if (/bug|ошиб|баг/.test(s)) return { icon: "●", colorKey: "ansi1" };
+  if (/story|истор/.test(s)) return { icon: "◈", colorKey: "ansi2" };
+  return /epic|эпик/.test(s) ? { icon: "⚡", colorKey: "ansi5" } : { icon: "✓", colorKey: "ansi4" };
 }
 
 /**
  * @param {string | undefined | null} status
- * @returns {"ansi1" | "ansi2" | "ansi3" | "accent" | "foreground"}
+ * @returns {"ansi1" | "ansi2" | "ansi3" | "ansi4" | "accent" | "foreground"}
  */
 export function statusColorKey(status) {
   if (!status) return "foreground";
-  const text = status.toLowerCase();
-  if (/paused|reject|blocked/.test(text)) return "ansi1";
-  if (/review|test|qa|reproduce|analyze/.test(text)) return "ansi3";
-  if (/done|deployed|закрыт|ready/.test(text)) return "ansi2";
-  if (/progress|работ/.test(text)) return "accent";
+  const s = status.toLowerCase();
+  if (/paused|reject|blocked|пауз|отклон|блок/.test(s)) return "ansi1";
+  if (/review|test|qa|reproduce|analyze|ревью|тест|проверк|анализ/.test(s)) return "ansi3";
+  if (/done|deployed|закрыт|ready|готов|решен|выполн/.test(s)) return "ansi2";
+  if (/progress|работ/.test(s)) return "accent";
+  if (/open|to\s*do|открыт|сделать|new|нов/.test(s)) return "ansi4";
   return "foreground";
 }

@@ -185,3 +185,34 @@ export function diffNewCounterIssues(prevKeysByCounter, nextCounters) {
 
   return { seen, toasts };
 }
+
+/**
+ * @typedef {{ id?: string, name: string, type: "date" | "text" }} PinnedFieldConfig
+ */
+
+/**
+ * Parses pinned field configurations from JSON text ({ fields: [...] }).
+ * @param {string | null | undefined} text
+ * @returns {PinnedFieldConfig[]}
+ */
+export function parsePinnedFieldConfigs(text) {
+  if (!text || !text.trim()) return [];
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed?.fields)) return [];
+  /** @type {PinnedFieldConfig[]} */
+  const out = [];
+  for (const item of parsed.fields) {
+    if (!item || typeof item !== "object") continue;
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+    if (!name) continue;
+    const id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : undefined;
+    const type = item.type === "text" ? "text" : "date";
+    out.push({ ...(id ? { id } : {}), name, type });
+  }
+  return out;
+}

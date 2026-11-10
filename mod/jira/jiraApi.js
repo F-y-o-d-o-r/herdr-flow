@@ -1,15 +1,24 @@
 // Jira Cloud REST through curl with a netrc file: <app home>/herdr-flow.netrc
 // ("machine <site>.atlassian.net login <email> password <API token>", chmod 600).
 // The site address is the netrc's machine.
-import { appHome, exec } from "herdr";
+import { appHome, exec, readTextFile } from "herdr";
 /** @typedef {import("../types.js").Issue} Issue */
 /** @typedef {import("../types.js").IssueFull} IssueFull */
 /** @typedef {import("../types.js").Attachment} Attachment */
 /** @typedef {import("../types.js").Person} Person */
 /** @typedef {{ base: string, netrc: string, sprintField: string | null | undefined, cloudId?: string | null, myId?: string | null }} Site */
 
-import { adfText, attachmentsFrom, checklistFrom, customFieldsFrom, issueRow, personOf } from "./jiraFormatHelpers.js";
+import {
+  adfText,
+  attachmentsFrom,
+  checklistFrom,
+  customFieldsFrom,
+  issueRow,
+  personOf,
+  pinnedFieldsFrom,
+} from "./jiraFormatHelpers.js";
 import { REACTION_PROP, buildReactionsGql, mergeCommentLikes, nextLikeProp } from "./commentReactionHelpers.js";
+import { COUNTERS_FILE, parsePinnedFieldConfigs } from "./counterHelpers.js";
 
 const NETRC_NAME = "herdr-flow.netrc";
 const netrcPath = () => `${appHome()}/${NETRC_NAME}`;
@@ -140,11 +149,12 @@ export async function issue(key) {
  */
 export async function issueFull(key) {
   await sprintField();
-  const [r, c, list, ident] = await Promise.all([
+  const [r, c, list, ident, cfgText] = await Promise.all([
     call("GET", issuePath(key, "?fields=*all&expand=names")),
     call("GET", issuePath(key, "/comment?orderBy=-created&maxResults=50&expand=properties")).catch(() => null),
     call("GET", issuePath(key, "/properties/checklist")).catch(() => null),
     siteIdentity(),
+    readTextFile(`${appHome()}/${COUNTERS_FILE}`).catch(() => null),
   ]);
   const rawComments = c?.comments ?? [];
   const gqlQuery =
@@ -167,14 +177,17 @@ export async function issueFull(key) {
       ...mergeCommentLikes({ gqlEdges, propValue: prop, myAccountId: ident.myId }),
     };
   });
+  const pinnedFields = pinnedFieldsFrom(r?.fields, r?.names, parsePinnedFieldConfigs(cfgText));
+  const fields = customFieldsFrom(r?.fields, r?.names).filter((f) => !pinnedFields.some((p) => p.name === f.name));
   return {
-    ...issueRow(r, { sprintField: site.sprintField }),
-    description: adfText(r.fields?.description).trim(),
-    url: browseUrl(r.key),
+    ...issueRow(r, { sprintField: site?.sprintField }),
+    description: adfText(r?.fields?.description).trim(),
+    url: browseUrl(r?.key),
     comments,
     checklist: checklistFrom(list?.value),
-    attachments: attachmentsFrom(r.fields?.attachment),
-    fields: customFieldsFrom(r.fields, r.names),
+    attachments: attachmentsFrom(r?.fields?.attachment),
+    fields,
+    pinnedFields,
   };
 }
 
@@ -213,6 +226,8 @@ export const transition = (/** @type {string} */ key, /** @type {string} */ id) 
   call("POST", issuePath(key, "/transitions"), { transition: { id } });
 export const assign = (/** @type {string} */ key, /** @type {string | null} */ accountId) =>
   call("PUT", issuePath(key, "/assignee"), { accountId });
+export const updateField = (/** @type {string} */ key, /** @type {string} */ fieldId, /** @type {unknown} */ value) =>
+  call("PUT", issuePath(key), { fields: { [fieldId]: value } });
 
 /**
  * Who handed the issue to its current assignee (the last assignee change), or null.

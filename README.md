@@ -8,7 +8,7 @@ Keyboard-first velocity tools for the [Herdr](https://herdr.dev) desktop app, in
 
 - **Leader** — `ctrl-a` / `ctrl-;` then one key, with a cheat sheet.
 - **Git & repos** — pick a repo for the helper shell and panels, lazygit, pull all repos safely.
-- **Jira** — your issues, configurable counters, top bar badges, live issue card, quick reassign / move / hand to an agent, and a side panel with the whole issue.
+- **Jira** — your issues, configurable counters, top bar badges, live issue card, quick reassign / move / hand to an agent, and a side panel with inline editing and `+ Context`.
 
 Every list shows its key on the left, `/` searches, the footer lists the keys, and the Russian
 keyboard layout works too.
@@ -84,39 +84,46 @@ repo directly inside it (one level), e.g. a `~/code` folder with several project
 ### Configurable counters & top bar badges
 
 Customize your counters in `~/.config/herdr-app/herdr-flow.jira.json` with custom `jql`, `color`
-(`accent`, `warn`, `ok`, `muted`), and `notify` toast alerts:
+(`accent`, `warn`, `ok`, `muted`), and `notify` toast alerts. Pass either a list of counters or an object with `"counters"` and optional `"fields"` to pin editable custom fields in the side panel's `Details`:
 
 ```json
-[
-  {
-    "id": "assigned",
-    "tag": "A",
-    "key": "a",
-    "label": "Assigned",
-    "jql": "assignee = currentUser() AND statusCategory != Done AND status != Reject AND status not in (\"Code Review\", \"Review\", \"In Review\") ORDER BY updated DESC",
-    "color": "accent",
-    "notify": { "title": "Jira [A] · Assigned to you", "level": "info" }
-  },
-  {
-    "id": "review",
-    "tag": "R",
-    "key": "r",
-    "label": "Ready for Review",
-    "jql": "assignee = currentUser() AND status in (\"Code Review\", \"Review\", \"In Review\") ORDER BY updated DESC",
-    "color": "warn",
-    "notify": { "title": "Jira [R] · Ready for your code review", "level": "warning" }
-  },
-  {
-    "id": "sandbox",
-    "tag": "S",
-    "key": "s",
-    "label": "Sandbox Tasks",
-    "jql": "project = ACME AND status = Open AND assignee is EMPTY ORDER BY created DESC",
-    "color": "ok",
-    "notify": { "title": "Jira [S] · New free task in Sandbox", "level": "success" }
-  }
-]
+{
+  "counters": [
+    {
+      "id": "assigned",
+      "tag": "A",
+      "key": "a",
+      "label": "Assigned",
+      "jql": "assignee = currentUser() AND statusCategory != Done AND status != Reject AND status not in (\"Code Review\", \"Review\", \"In Review\") ORDER BY updated DESC",
+      "color": "accent",
+      "notify": { "title": "Jira [A] · Assigned to you", "level": "info" }
+    },
+    {
+      "id": "review",
+      "tag": "R",
+      "key": "r",
+      "label": "Ready for Review",
+      "jql": "assignee = currentUser() AND status in (\"Code Review\", \"Review\", \"In Review\") ORDER BY updated DESC",
+      "color": "warn",
+      "notify": { "title": "Jira [R] · Ready for your code review", "level": "warning" }
+    },
+    {
+      "id": "sandbox",
+      "tag": "S",
+      "key": "s",
+      "label": "Sandbox Tasks",
+      "jql": "project = ACME AND status = Open AND assignee is EMPTY ORDER BY created DESC",
+      "color": "ok",
+      "notify": { "title": "Jira [S] · New free task in Sandbox", "level": "success" }
+    }
+  ],
+  "fields": [
+    { "name": "Due date Code review", "type": "date" }
+  ]
+}
 ```
+
+- **Pinned custom fields (`fields`)**: add optional field definitions alongside `"counters"` so custom fields (even when empty or `null` in Jira) are always pinned and editable in the side panel's `Details` section.
 
 - **Top-bar widget (`jira-bar`)**: add the optional `jira-bar` block (`props: { view: "bar" }`, snippet in
   `scripts/layout-snippets.json`) to your layout's top bar tabs row. It shows live `A` / `R` / `S` counts,
@@ -141,10 +148,15 @@ Picking an issue displays its card preview: semantic status pill, priority icon 
 
 <img src="docs/screenshots/jira-card.png" width="360" alt="Issue card"> <img src="docs/screenshots/jira-panel.png" width="260" alt="Jira side panel">
 
-### Side panel
+### Side panel (`jira-view`)
 
 The **side panel** (`ctrl-a i` or `O` on any card) docks alongside your work:
 
+- **`+ Context` button** in the top badge row: sends the current issue's prompt (`agentPrompt`: key, summary, status, link, description, and branch instructions) directly to the active agent pane (`Current pane · <agent>`) or opens a new agent tab (`New tab · <agent>`) in the project work folder.
+- **Inline editing right in the side panel**:
+  - Click the **Status badge** (`In Progress ▾`) to view and apply Jira transitions in place.
+  - Click **`Assignee`** (`@ Name ✎`) in `Details` to reassign (with quick options for the person who handed the issue over, the reporter, or live user search).
+  - Click any configured **pinned field** (such as **`Due date Code review`**) in `Details` to set or clear a date using one-click chips (`Today`, `Tomorrow`, `+2d`, `Next Mon`, `Clear`) or by typing `YYYY-MM-DD` / `DD.MM`.
 - **Quick issue switcher**: press `/` or click the `# / key` input in the header to switch to any issue
   instantly.
 - **Header controls**: `←` back button with full history navigation, `↗` open in browser, `⟳` reload, and `✕` close.

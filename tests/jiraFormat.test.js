@@ -123,7 +123,8 @@ test("statusColorKey: maps status texts to color tokens", () => {
   assert.equal(statusColorKey("В работе"), "accent");
   assert.equal(statusColorKey("Done"), "ansi2");
   assert.equal(statusColorKey("Ready to prod"), "ansi2");
-  assert.equal(statusColorKey("Open"), "foreground");
-  assert.equal(statusColorKey("Открыто"), "foreground");
+  assert.equal(statusColorKey("Open"), "ansi4");
+  assert.equal(statusColorKey("Открыто"), "ansi4");
+  assert.equal(statusColorKey("To Do"), "ansi4");
   assert.equal(statusColorKey(undefined), "foreground");
 });

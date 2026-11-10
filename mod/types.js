@@ -58,9 +58,11 @@
 /** @typedef {{ id: string, name: string, mime: string, sizeText: string, isImage: boolean }} Attachment */
 /** @typedef {{ name: string, text: string }} CustomField */
 
+/** @typedef {{ id: string, name: string, value: string, type: "date" | "text" }} PinnedField */
+
 /**
  * Everything the side panel shows.
- * @typedef {Issue & { comments: Comment[], checklist: Checklist | null, attachments: Attachment[], fields: CustomField[] }} IssueFull
+ * @typedef {Issue & { comments: Comment[], checklist: Checklist | null, attachments: Attachment[], fields: CustomField[], pinnedFields?: PinnedField[] }} IssueFull
  */
 
 export {};

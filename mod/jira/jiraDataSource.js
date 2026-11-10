@@ -26,6 +26,7 @@ import { demo } from "./jiraDemoData.js";
  * @property {(key: string) => string} browseUrl
  * @property {(id: string) => string} attachmentUrl
  * @property {(att: Attachment) => Promise<string | null>} cacheImage
+ * @property {(key: string, fieldId: string, value: unknown) => Promise<unknown>} updateField
  * @property {(commentId: string, wantLiked: boolean) => Promise<unknown>} toggleCommentLike
  */
 /** @typedef {JiraApi & { demo: boolean }} JiraSource */
@@ -38,6 +39,13 @@ const demoWrite = async () => notify({ title: "herdr-flow", body: "demo mode: no
  */
 export async function jiraSource() {
   if (await isDemo())
-    return { ...demo, transition: demoWrite, assign: demoWrite, toggleCommentLike: demoWrite, demo: true };
+    return {
+      ...demo,
+      transition: demoWrite,
+      assign: demoWrite,
+      updateField: demoWrite,
+      toggleCommentLike: demoWrite,
+      demo: true,
+    };
   return { ...api, demo: false };
 }

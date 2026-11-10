@@ -99,11 +99,13 @@ export function rowView(t, r, { selected, searching, act }) {
         .max_w(170)
         .items_end()
         .child(
-          div()
-            .truncate()
-            .text_size(11)
-            .text_color(t.dim)
-            .child(r.hint || ""),
+          Boolean(r.who || r.meta || r.prio) && r.hint
+            ? (statusBadge(t, r.hint) ?? div())
+            : div()
+                .truncate()
+                .text_size(11)
+                .text_color(t.dim)
+                .child(r.hint || ""),
         )
         .when(Boolean(r.meta), (e) => e.child(div().truncate().text_size(10).text_color(t.dim).child(r.meta))),
     );

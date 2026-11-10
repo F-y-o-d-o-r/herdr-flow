@@ -15,7 +15,7 @@ When a user asks to add or install this mod:
 3. Validate the mod using `herdr-app check ~/.config/herdr-app/mods/herdr-flow`.
 4. Layout blocks (snippets in `scripts/layout-snippets.json`):
    - `router` block: optional floating block, needed only if direct keys (e.g. `cmd-e` → `herdr-flow.nvim-zoom`) are desired;
-   - `jira-view` block: optional Jira side panel (`props: { view: "panel" }`);
+   - `jira-view` block: optional Jira side panel (`props: { view: "panel" }`) with inline editing and `+ Context` agent sender;
    - `jira-bar` block: optional top bar counters widget (`props: { view: "bar" }`) with live counts and toast notifications.
    Always ask the user before editing their active layout file.
 
@@ -67,7 +67,7 @@ to a layout without asking.
 ## Files
 
 - `mod/` — the mod (installed as `mods/herdr-flow`). `main.js` picks the screen from props.
-- `mod/jira/` — Jira integration: counter bar, menus, card preview, side panel (`jira-view`) with 👍 comment reactions.
+- `mod/jira/` — Jira integration: counter bar, menus, card preview, side panel (`jira-view`) with 👍 comment reactions, inline editing (`mod/jira/sidePanelEditHelpers.js`: status transitions, assignee picker, pinned date field editor, and `+ Context` agent sender), and configurable `fields` in `herdr-flow.jira.json`.
 - `tests/` — `node --test` for pure modules.
 - `scripts/install.sh` — install / update.
 - `NOTICE` — the leader screen is a fork of DanielFGray/herdr-config `mods/prefix` (Apache-2.0).

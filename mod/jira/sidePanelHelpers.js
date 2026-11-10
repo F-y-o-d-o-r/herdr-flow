@@ -1,9 +1,8 @@
 // Parts of the Jira side panel: search dropdown, titles, facts, text with images, attachments, fields, checklist.
 import { div, image } from "gpui-kit";
 import { TextView, h_flex, v_flex } from "gpui-base";
-import { ago } from "../timeHelpers.js";
 import { defaultProject, splitImages, statusColorKey } from "./jiraFormatHelpers.js";
-import { priorityBadge, tagChip } from "./issueCardHelpers.js";
+import { priorityBadge } from "./issueCardHelpers.js";
 
 /** @typedef {import("../types.js").Theme} Theme */
 /** @typedef {import("../types.js").Cx} Cx */
@@ -93,7 +92,14 @@ export function searchDropdown(t, { suggestions, selectedAt, onSelect }) {
               .child(item.summary ?? ""),
           )
           .when(Boolean(item.status), (e) =>
-            e.child(div().flex_none().text_size(11).text_color(t.dim).child(item.status)),
+            e.child(
+              div()
+                .flex_none()
+                .text_size(11)
+                .font_semibold()
+                .text_color(t[statusColorKey(item.status)] ?? t.dim)
+                .child(item.status),
+            ),
           );
       }),
     );
@@ -101,7 +107,7 @@ export function searchDropdown(t, { suggestions, selectedAt, onSelect }) {
 
 /** @param {Theme} t @param {string} title */
 export const section = (t, title) =>
-  div().pt(10).pb(2).text_size(11).font_semibold().text_color(t.dim).child(title.toUpperCase());
+  div().pt(7).pb(1).text_size(11).font_semibold().text_color(t.dim).child(title.toUpperCase());
 
 /** @param {Theme} t @param {string} name @param {any} [content] */
 export function fact(t, name, content) {
@@ -112,40 +118,8 @@ export function fact(t, name, content) {
     .gap(8)
     .text_size(12)
     .items_center()
-    .child(div().w(80).flex_none().text_color(t.dim).child(name))
+    .child(div().w(128).flex_none().truncate().text_color(t.dim).child(name))
     .child(body);
-}
-
-/** @param {Theme} t @param {string} label @param {string} date @param {any} color */
-const factAgo = (t, label, date, color) =>
-  fact(
-    t,
-    label,
-    div()
-      .text_color(color)
-      .child(date ? `${ago(date)} ago` : "—"),
-  );
-
-/** @param {Theme} t @param {IssueFull} i */
-export function detailsRows(t, i) {
-  const muted = t.muted ?? t.dim;
-  const assignee = i.assignee ? div().font_semibold().text_color(t.accent).child(`@ ${i.assignee}`) : "—";
-  const reporter = i.reporter?.name ? div().text_color(t.foreground).child(i.reporter.name) : "—";
-  const sprint = i.sprint ? tagChip(t, i.sprint, t.accent) : "—";
-  const labels = i.labels?.length
-    ? h_flex()
-        .gap(4)
-        .children(i.labels.map((l) => tagChip(t, l, muted)))
-    : "—";
-  return [
-    fact(t, "Assignee", assignee),
-    fact(t, "Reporter", reporter),
-    fact(t, "Sprint", sprint),
-    fact(t, "Labels", labels),
-    fact(t, "Parent", i.parent),
-    factAgo(t, "Created", i.created, muted),
-    factAgo(t, "Updated", i.updated, muted),
-  ];
 }
 
 /** @param {Theme} t @param {string} id @param {string} label @param {(cx: Cx) => void} act */

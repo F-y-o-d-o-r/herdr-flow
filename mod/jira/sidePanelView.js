@@ -5,17 +5,17 @@ import { h_flex, v_flex } from "gpui-base";
 import { exec, run, setShared, shared, theme } from "herdr";
 import { latin } from "../pickerKeyHelpers.js";
 import { defaultProject } from "./jiraFormatHelpers.js";
-import { issueTypeBadge, priorityBadge, statusBadge } from "./issueCardHelpers.js";
 import { COUNTERS_SHARED } from "./counterHelpers.js";
 import { PANEL } from "./issueActionSteps.js";
 import * as helpers from "./sidePanelHelpers.js";
-import { commentRow } from "./commentReactionHelpers.js";
+import * as edit from "./sidePanelEditHelpers.js";
 import { jiraSource } from "./jiraDataSource.js";
 
 /** @typedef {import("../types.js").Theme} Theme */
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").Issue} Issue */
 /** @typedef {import("../types.js").IssueFull} IssueFull */
+/** @typedef {import("../types.js").Person} Person */
 /** @typedef {import("../types.js").FocusHandle} FocusHandle */
 /** @typedef {Awaited<ReturnType<typeof jiraSource>>} JiraSource */
 
@@ -35,6 +35,16 @@ export class PanelView {
   searching = false;
   query = "";
   searchAt = 0;
+  /** @type {string | null} */ editMode = null;
+  editQuery = "";
+  editIndex = 0;
+  /** @type {{ id: string, name: string, to: string }[]} */ transitions = [];
+  transitionsLoading = false;
+  /** @type {any[]} */ agentOptions = [];
+  agentLoading = false;
+  /** @type {Person | null} */ handedByPerson = null;
+  /** @type {Person[]} */ peopleFound = [];
+  peopleLoading = false;
 
   /** @param {Cx} cx */
   init(cx) {
@@ -51,6 +61,16 @@ export class PanelView {
       searching: false,
       query: "",
       searchAt: 0,
+      editMode: null,
+      editQuery: "",
+      editIndex: 0,
+      transitions: [],
+      transitionsLoading: false,
+      agentOptions: [],
+      agentLoading: false,
+      handedByPerson: null,
+      peopleFound: [],
+      peopleLoading: false,
     });
     const check = (/** @type {Cx} */ cx) => {
       const k = /** @type {string | null} */ (shared(PANEL.key));
@@ -63,12 +83,30 @@ export class PanelView {
     cx.timer.every(CHECK_MS, check);
   }
 
+  openEditor(/** @type {string} */ m, /** @type {Cx} */ cx) {
+    edit.openEditor(this, m, cx);
+  }
+  closeEditor(/** @type {Cx} */ cx) {
+    edit.closeEditor(this, cx);
+  }
+  applyTransition(/** @type {import("./jiraDataSource.js").Transition} */ tr, /** @type {Cx} */ cx) {
+    edit.applyTransition(this, tr, cx);
+  }
+  applyAssign(/** @type {Person} */ p, /** @type {Cx} */ cx) {
+    edit.applyAssign(this, p, cx);
+  }
+  applyField(/** @type {import("../types.js").PinnedField} */ f, /** @type {string | null} */ v, /** @type {Cx} */ cx) {
+    edit.applyField(this, f, v, cx);
+  }
+  sendToAgent(/** @type {any} */ opt, /** @type {Cx} */ cx) {
+    edit.sendToAgent(this, opt, cx);
+  }
+
   /** @param {import("../types.js").Comment} comment @param {Cx} cx */
   toggleLike(comment, cx) {
     const nextLiked = !comment.liked;
-    const delta = nextLiked ? 1 : -1;
     comment.liked = nextLiked;
-    comment.likes = Math.max(0, (comment.likes ?? 0) + delta);
+    comment.likes = Math.max(0, (comment.likes ?? 0) + (nextLiked ? 1 : -1));
     cx.notify();
     if (comment.id && this.jira) {
       cx.spawn(async () => {
@@ -138,6 +176,7 @@ export class PanelView {
 
   /** @param {import("../types.js").KeyEvent} e @param {Cx} cx */
   onKey(e, cx) {
+    if (this.editMode && edit.onEditKey(this, e, cx)) return;
     if (!this.searching) {
       if (e.key === "/" || e.key_char === "/" || e.key_char === ".") (cx.stop_propagation(), this.startSearch(cx));
       return;
@@ -212,55 +251,7 @@ export class PanelView {
 
   /** @param {Theme} t @param {IssueFull} i */
   issueBody(t, i) {
-    const badges = [statusBadge(t, i.status), issueTypeBadge(t, i.type), priorityBadge(t, i.priority)].filter(Boolean);
-    const names = new Set(i.attachments.filter((a) => a.isImage).map((a) => a.name));
-    const openAtt = (/** @type {any} */ a) => this.openUrl(this.jira?.attachmentUrl(a.id));
-    return v_flex()
-      .gap(4)
-      .child(h_flex().gap(8).items_center().children(badges))
-      .child(div().pt(4).text_size(16).font_semibold().child(i.summary))
-      .child(helpers.section(t, "Details"))
-      .children(helpers.detailsRows(t, i))
-      .when(i.links.length > 0, (e) =>
-        e
-          .child(helpers.section(t, "Links"))
-          .children(
-            i.links.map((l, n) =>
-              helpers.linkRow(t, { id: `jv-link-${n}`, link: l, act: (cx) => this.openLinked(l.key, cx) }),
-            ),
-          ),
-      )
-      .when(Boolean(i.checklist), (e) =>
-        e.child(helpers.checklistView(t, { checklist: i.checklist, open: () => this.openUrl(i.url) })),
-      )
-      .when(i.fields.length > 0, (e) => e.child(helpers.customFields(t, { fields: i.fields, gen: this.gen })))
-      .child(helpers.section(t, "Description"))
-      .child(
-        helpers.richText(t, {
-          id: `jv-desc-${this.gen}`,
-          text: i.description || "_No description_",
-          images: this.images,
-          imageNames: names,
-        }),
-      )
-      .when(i.attachments.length > 0, (e) =>
-        e
-          .child(helpers.section(t, `Attachments (${i.attachments.length})`))
-          .child(helpers.attachmentList(t, { attachments: i.attachments, images: this.images, open: openAtt })),
-      )
-      .child(helpers.section(t, `Comments (${i.comments.length})`))
-      .children(
-        i.comments.map((c, n) =>
-          commentRow(t, {
-            comment: c,
-            index: n,
-            gen: this.gen,
-            images: this.images,
-            imageNames: names,
-            onToggleLike: (cm, cx) => this.toggleLike(cm, cx),
-          }),
-        ),
-      );
+    return edit.issueBody(t, this, i);
   }
 
   render() {

@@ -82,9 +82,17 @@ const DETAILS = {
     { name: "How to test", text: "Open the dashboard at 360 px and hover the revenue chart." },
     { name: "Environment", text: "Stage" },
   ],
+  pinnedFields: [
+    {
+      id: "customfield_10043",
+      name: "Due date Code review",
+      value: "2026-11-12",
+      type: /** @type {"date"} */ ("date"),
+    },
+  ],
 };
 
-/** @type {Omit<JiraApi, "transition" | "assign" | "toggleCommentLike">} */
+/** @type {Omit<JiraApi, "transition" | "assign" | "toggleCommentLike" | "updateField">} */
 export const demo = {
   myIssues: async () => ISSUES,
   recentIssues: async () => [ISSUES[1], ISSUES[3], base("ACME-270", "Onboarding emails", { status: "Closed" })],
