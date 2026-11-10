@@ -1,6 +1,6 @@
 // The issue key in the focused repo's branch name (e.g. "AB-123-short-name"), or null.
 import { exec } from "herdr";
-import { foregroundCwd } from "../folders.js";
+import { foregroundCwd } from "../folderHelpers.js";
 
 /**
  * @param {ReturnType<typeof import("herdr").focused>} focused

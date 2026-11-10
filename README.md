@@ -8,8 +8,7 @@ Keyboard-first velocity tools for the [Herdr](https://herdr.dev) desktop app, in
 
 - **Leader** — `ctrl-a` / `ctrl-;` then one key, with a cheat sheet.
 - **Git & repos** — pick a repo for the helper shell and panels, lazygit, pull all repos safely.
-- **Jira** — your issues, an issue card, move / reassign / hand to an agent, a side panel with the
-  whole issue.
+- **Jira** — your issues, configurable counters, top bar badges, live issue card, quick reassign / move / hand to an agent, and a side panel with the whole issue.
 
 Every list shows its key on the left, `/` searches, the footer lists the keys, and the Russian
 keyboard layout works too.
@@ -24,16 +23,19 @@ _Repos, issues and people on the screenshots are invented._
 
 `ctrl-a` or `ctrl-;` opens a popup with the cheat sheet; the next key runs its action and closes it.
 The top block is the tmux set (`c n p 1-9 , & % " h j k l { } z x ( ) $ s w : ?`, plus `-` / `|`
-splits), the bottom block is ours. A grey column shows the direct shortcut where there is one.
-Pressing the leader twice sends it to the terminal. `/` searches the sheet.
+splits), the bottom block is ours. Direct shortcuts work outside the leader too (grey column):
+`alt-h/j/k/l` (`cmd-alt-←/↓/↑/→`) to focus panes, `alt-shift-h/k` & `alt-shift-l/j` (`cmd-alt-shift-←/→`)
+to swap panes. Pressing the leader twice sends it to the terminal. `/` searches the sheet.
 
 | Key | What |
 |---|---|
+| `h` / `j` / `k` / `l` | focus pane left / down / up / right (`alt-h/j/k/l`, `cmd-alt-←/↓/↑/→`) |
+| `{` / `}` | swap panes left / up & right / down (`alt-shift-h/k/l/j`, `cmd-alt-shift-←/→`) |
 | `g` | lazygit for the right repo |
 | `b` | repo picker (cd the tab's helper shell into a repo) |
 | `d` / `r` / `y` | Changes / Redline / Pipelines for a repo (asks which one first) |
 | `P` | pull all repos |
-| `J` | Jira |
+| `J` | jira: assigned / review / history / any issue |
 | `i` | Jira side panel |
 | `e` | nvim + file tree, nvim zoomed (needs herdr-nvim) |
 | `G` | git panel · `q` agent history · `o` / `O` Obsidian · `t` themes · `a` agent waiting |
@@ -71,16 +73,63 @@ repo directly inside it (one level), e.g. a `~/code` folder with several project
 
 <img src="docs/screenshots/jira-menu.png" width="320" alt="Jira menu"> <img src="docs/screenshots/jira-assigned.png" width="320" alt="Assigned issues">
 
-`ctrl-a J`:
+`ctrl-a J` opens the Jira hub:
 
-- `a` **Assigned** — open issues on you (not done, not `Reject`); the issue of the current git branch
-  comes first.
+- Configurable counter lists: `a` **Assigned** (open issues on you; current branch issue first),
+  `r` **Review**, plus custom lists like `s` **Sandbox**.
 - `h` **History** — issues you viewed, moved or reassigned in the last 14 days.
-- `/1307` or `/KEY-1307` — any issue. A bare number uses the current branch's project, else your
-  usual one.
+- `/1307` or `/KEY-1307` — any issue by key or summary. A bare number uses the current branch's project,
+  else your usual one.
 
-Picking an issue opens its **card**: status, summary, assignee, reporter, dates, type, priority,
-sprint, labels, parent, links (blocks / is blocked by in red). Then:
+### Configurable counters & top bar badges
+
+Customize your counters in `~/.config/herdr-app/herdr-flow.jira.json` with custom `jql`, `color`
+(`accent`, `warn`, `ok`, `muted`), and `notify` toast alerts:
+
+```json
+[
+  {
+    "id": "assigned",
+    "tag": "A",
+    "key": "a",
+    "label": "Assigned",
+    "jql": "assignee = currentUser() AND statusCategory != Done AND status != Reject AND status not in (\"Code Review\", \"Review\", \"In Review\") ORDER BY updated DESC",
+    "color": "accent",
+    "notify": { "title": "Jira [A] · Assigned to you", "level": "info" }
+  },
+  {
+    "id": "review",
+    "tag": "R",
+    "key": "r",
+    "label": "Ready for Review",
+    "jql": "assignee = currentUser() AND status in (\"Code Review\", \"Review\", \"In Review\") ORDER BY updated DESC",
+    "color": "warn",
+    "notify": { "title": "Jira [R] · Ready for your code review", "level": "warning" }
+  },
+  {
+    "id": "sandbox",
+    "tag": "S",
+    "key": "s",
+    "label": "Sandbox Tasks",
+    "jql": "project = ACME AND status = Open AND assignee is EMPTY ORDER BY created DESC",
+    "color": "ok",
+    "notify": { "title": "Jira [S] · New free task in Sandbox", "level": "success" }
+  }
+]
+```
+
+- **Top-bar widget (`jira-bar`)**: add the optional `jira-bar` block (`props: { view: "bar" }`, snippet in
+  `scripts/layout-snippets.json`) to your layout's top bar tabs row. It shows live `A` / `R` / `S` counts,
+  opens that list on click, and polls in the background.
+- **Desktop toasts**: when new issues arrive on any monitored counter, Herdr posts a toast notification
+  with the issue key and summary (suppressed on initial startup, bundled if multiple arrive). Set
+  `"notify": false` on any counter to silence its alerts.
+
+### Issue card & actions
+
+Picking an issue displays its card preview: semantic status pill, priority icon and color
+(⇈ Highest, ↑ High, = Medium, ↓ Low, ⇊ Lowest), issue type icon and color (● Bug, ◈ Story, ⚡ Epic, ✓ Task),
+`@ Assignee`, sprint chip, label chips, parent, and red links (blocks / is blocked by).
 
 | Key | What |
 |---|---|
@@ -92,10 +141,17 @@ sprint, labels, parent, links (blocks / is blocked by in red). Then:
 
 <img src="docs/screenshots/jira-card.png" width="360" alt="Issue card"> <img src="docs/screenshots/jira-panel.png" width="260" alt="Jira side panel">
 
-The **side panel** shows the whole issue: description and comments with their images, every filled
-field (How to test, Environment…), links (they open in the panel, `←` goes back), attachments, the
-checklist summary (editing a checklist happens in Jira). Images are cached in
-`~/.config/herdr-app/data/herdr-flow/cache`.
+### Side panel
+
+The **side panel** (`ctrl-a i` or `O` on any card) docks alongside your work:
+
+- **Quick issue switcher**: press `/` or click the `# / key` input in the header to switch to any issue
+  instantly.
+- **Header controls**: `←` back button with full history navigation, `↗` open in browser, `⟳` reload, and `✕` close.
+- **Comment reactions**: comments display Jira `👍` reaction counts and allow toggling `👍` directly from the side panel.
+- **Full issue details**: description and comments with rendered inline images, every filled custom field
+  (How to test, Environment…), issue links (clicking any link opens that issue directly in the panel),
+  attachments, and checklist progress summary. Images are cached locally in `~/.config/herdr-app/data/herdr-flow/cache`.
 
 ### Jira login
 
@@ -129,16 +185,17 @@ sh scripts/install.sh
 ```
 
 It copies `mod/` to `~/.config/herdr-app/mods/herdr-flow` (or `$HERDR_APP_HOME`), points
-`ctrl-a` / `ctrl-;` at it when they are free, and prints two optional layout blocks for your own
-(cloned) layout:
+`ctrl-a` / `ctrl-;` at it when they are free, and offers optional layout blocks for your own
+layout (`scripts/layout-snippets.json`):
 
 - **router** — an invisible block (draws nothing, no timers; it only waits for a key). Herdr's
   `keys.json` can only open a mod as a whole, so a direct key for one action inside herdr-flow needs
   it, e.g. `"cmd-e": "herdr-flow.nvim-zoom"`. Commands: `nvim-zoom`, `leader`, `git`, `repo`,
-  `pull`, `jira`, `panel`. Without it only such direct keys don't work.
-- **jira-view** — the Jira side panel.
+  `pull`, `jira`, `panel`, `card:<KEY>`, `list:<id>`, `show:<KEY>`.
+- **jira-view** — the Jira side panel (`props: { view: "panel" }`).
+- **jira-bar** — top-bar badge counters (`props: { view: "bar" }`) with live issue counts and background new-issue toast alerts.
 
-Run it again to update; your `herdr-flow.bindings.json` and `herdr-flow.netrc` stay as they are.
+Run it again to update; your `herdr-flow.bindings.json`, `herdr-flow.jira.json`, and `herdr-flow.netrc` stay as they are.
 
 **Needs:** Herdr app 0.1.14+, git, curl; lazygit for `g`; herdr-nvim for `e`.
 

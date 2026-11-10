@@ -21,7 +21,8 @@ cat <<MSG
 
 Optional layout blocks for your own (cloned) layout, see README "Install":
 - router: invisible, needed only for direct keys like cmd-e -> herdr-flow.nvim-zoom;
-- jira-view: the Jira side panel.
+- jira-view: the Jira side panel;
+- jira-bar: Jira counters in the top bar with toast alerts.
 $(cat "$HERE/scripts/layout-snippets.json")
 
 Jira: create $HOME_DIR/herdr-flow.netrc (README "Jira login").

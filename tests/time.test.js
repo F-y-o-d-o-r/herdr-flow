@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ago } from "../mod/time.js";
+import { ago } from "../mod/timeHelpers.js";
 
 const before = (seconds) => new Date(Date.now() - seconds * 1000).toISOString();
 

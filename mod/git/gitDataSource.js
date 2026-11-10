@@ -1,7 +1,7 @@
 // Where the git screens get their repos: the focused terminal, the active space's folder, or demo data.
 import { focused, spaces } from "herdr";
 import { demoRepos, isDemo } from "../demo.js";
-import { folderWithRepos, foregroundCwd, rememberWorkFolder } from "../folders.js";
+import { folderWithRepos, foregroundCwd, rememberWorkFolder } from "../folderHelpers.js";
 
 /**
  * @typedef {object} SpaceRepos

@@ -1,6 +1,6 @@
 // Where the work is: a folder that is a repo, or a folder whose direct children are repos.
 import { exec, hc, setShared, shared } from "herdr";
-import { LIST_REPOS, parseRepoList } from "./repoList.js";
+import { LIST_REPOS, parseRepoList } from "./repoListHelpers.js";
 
 /** @typedef {import("./types.js").Repo} Repo */
 /** @typedef {import("./types.js").RepoList} RepoList */

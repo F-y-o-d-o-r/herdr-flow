@@ -1,6 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { adfText, agentPrompt, checklistFrom, defaultProject, issueLinks, issueRow } from "../mod/jira/format.js";
+import {
+  adfText,
+  agentPrompt,
+  checklistFrom,
+  defaultProject,
+  issueLinks,
+  issueRow,
+  issueTypeMeta,
+  priorityMeta,
+  statusColorKey,
+} from "../mod/jira/jiraFormatHelpers.js";
 
 test("adfText: paragraph, bullet list, code block", () => {
   const doc = {
@@ -79,4 +89,41 @@ test("agentPrompt: universal instructions, no personal names", () => {
   assert.match(text, /AB-1: Fix/);
   assert.match(text, /AGENTS\.md/);
   assert.doesNotMatch(text, /\/Users\/|~\//); // no machine paths in the prompt
+});
+
+test("priorityMeta: maps priorities to icons and colors", () => {
+  assert.deepEqual(priorityMeta("Highest"), { icon: "⇈", colorKey: "ansi1" });
+  assert.deepEqual(priorityMeta("Blocker"), { icon: "⇈", colorKey: "ansi1" });
+  assert.deepEqual(priorityMeta("Critical"), { icon: "⇈", colorKey: "ansi1" });
+  assert.deepEqual(priorityMeta("High"), { icon: "↑", colorKey: "ansi1" });
+  assert.deepEqual(priorityMeta("Medium"), { icon: "=", colorKey: "ansi3" });
+  assert.deepEqual(priorityMeta("Low"), { icon: "↓", colorKey: "ansi4" });
+  assert.deepEqual(priorityMeta("Lowest"), { icon: "⇊", colorKey: "muted" });
+  assert.equal(priorityMeta(undefined), null);
+});
+
+test("issueTypeMeta: maps issue types to symbols and colors", () => {
+  assert.deepEqual(issueTypeMeta("Bug"), { icon: "●", colorKey: "ansi1" });
+  assert.deepEqual(issueTypeMeta("Баг"), { icon: "●", colorKey: "ansi1" });
+  assert.deepEqual(issueTypeMeta("User Story"), { icon: "◈", colorKey: "ansi2" });
+  assert.deepEqual(issueTypeMeta("История"), { icon: "◈", colorKey: "ansi2" });
+  assert.deepEqual(issueTypeMeta("Epic"), { icon: "⚡", colorKey: "ansi5" });
+  assert.deepEqual(issueTypeMeta("Task"), { icon: "✓", colorKey: "ansi4" });
+  assert.deepEqual(issueTypeMeta("Sub-task"), { icon: "✓", colorKey: "ansi4" });
+  assert.equal(issueTypeMeta(undefined), null);
+});
+
+test("statusColorKey: maps status texts to color tokens", () => {
+  assert.equal(statusColorKey("Paused"), "ansi1");
+  assert.equal(statusColorKey("Reject"), "ansi1");
+  assert.equal(statusColorKey("Blocked"), "ansi1");
+  assert.equal(statusColorKey("Code Review"), "ansi3");
+  assert.equal(statusColorKey("QA"), "ansi3");
+  assert.equal(statusColorKey("In Progress"), "accent");
+  assert.equal(statusColorKey("В работе"), "accent");
+  assert.equal(statusColorKey("Done"), "ansi2");
+  assert.equal(statusColorKey("Ready to prod"), "ansi2");
+  assert.equal(statusColorKey("Open"), "foreground");
+  assert.equal(statusColorKey("Открыто"), "foreground");
+  assert.equal(statusColorKey(undefined), "foreground");
 });

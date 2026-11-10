@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { adfText, attachmentsFrom, checklistFrom, customFieldsFrom, splitImages } from "../mod/jira/format.js";
+import {
+  adfText,
+  attachmentsFrom,
+  checklistFrom,
+  customFieldsFrom,
+  splitImages,
+} from "../mod/jira/jiraFormatHelpers.js";
 
 test("adfText marks images by file name", () => {
   const doc = {

@@ -8,15 +8,15 @@ import { h_flex, v_flex } from "gpui-base";
 import { closeOverlay, exec, props, theme } from "herdr";
 import { demoPullResults } from "../demo.js";
 import { centered, footer, screenCard } from "../pickerView.js";
-import { pullOutcome, skipReason } from "./pullStatus.js";
-import { spaceRepos } from "./source.js";
+import { pullOutcome, skipReason } from "./pullStatusHelpers.js";
+import { spaceRepos } from "./gitDataSource.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").KeyEvent} KeyEvent */
 /** @typedef {import("../types.js").FocusHandle} FocusHandle */
 /** @typedef {import("../types.js").Theme} Theme */
-/** @typedef {import("./pullStatus.js").PullRow} PullRow */
-/** @typedef {import("./pullStatus.js").PullResult} PullResult */
+/** @typedef {import("./pullStatusHelpers.js").PullRow} PullRow */
+/** @typedef {import("./pullStatusHelpers.js").PullResult} PullResult */
 
 const PARALLEL = 4;
 const ENV = ["GIT_TERMINAL_PROMPT=0", "GCM_INTERACTIVE=0", "GIT_ASKPASS=", "GIT_SSH_COMMAND=ssh -o BatchMode=yes"];

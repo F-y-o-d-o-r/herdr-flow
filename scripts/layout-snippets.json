@@ -25,5 +25,18 @@
         "view": "panel"
       }
     }
+  },
+  "Jira counters in the top bar (add to tabs-row before cloudflare-bar)": {
+    "id": "jira-bar",
+    "type": "block",
+    "size": {
+      "px": 116
+    },
+    "content": {
+      "mod": "herdr-flow",
+      "props": {
+        "view": "bar"
+      }
+    }
   }
 }

@@ -15,7 +15,8 @@ When a user asks to add or install this mod:
 3. Validate the mod using `herdr-app check ~/.config/herdr-app/mods/herdr-flow`.
 4. Layout blocks (snippets in `scripts/layout-snippets.json`):
    - `router` block: optional floating block, needed only if direct keys (e.g. `cmd-e` → `herdr-flow.nvim-zoom`) are desired;
-   - `jira-view` block: optional Jira side panel.
+   - `jira-view` block: optional Jira side panel (`props: { view: "panel" }`);
+   - `jira-bar` block: optional top bar counters widget (`props: { view: "bar" }`) with live counts and toast notifications.
    Always ask the user before editing their active layout file.
 
 ## Commands
@@ -42,12 +43,12 @@ When a user asks to add or install this mod:
 - Every menu row shows its key on the left, the footer lists keys, `/` searches, keys are
   case-sensitive, the Russian layout maps to Latin keys.
 - Never edit third-party or Herdr's shipped mods; only call their commands.
-- Keep `README.md` and this file in sync with the code.
+- Keep `README.md`, `AGENTS.md`, and all screenshots in `docs/screenshots/` in sync with the code: whenever any screen, menu, keybinding, or displayed data changes, update both the documentation text and the corresponding demo screenshots.
 
 ## Demo mode (development only)
 
 For README screenshots: while `~/.config/herdr-app/herdr-flow.demo` exists, every screen shows
-invented data (`mod/demo.js`, `mod/jira/demoData.js`), runs no git network command and no Jira write.
+invented data (`mod/demo.js`, `mod/jira/jiraDemoData.js`), runs no git network command and no Jira write.
 Not a user feature — keep it out of README. To retake shots: create the file, open each screen
 through the router (`herdr-app do herdr-flow.<leader|git|repo|pull|jira|list:assigned|card:ACME-311|show:ACME-311>`),
 `herdr-app shot`, crop to the card, then remove the file.
@@ -58,13 +59,15 @@ Herdr's `keys.json` can only open a mod as a whole (`mod.open:herdr-flow` = the 
 key for one action inside herdr-flow (e.g. `cmd-e` → `herdr-flow.nvim-zoom`) needs the **router**:
 an empty floating block in the user's layout (`props: { role: "router" }`, snippet in
 `scripts/layout-snippets.json`). It draws nothing and only waits for `herdr-flow.<command>`
-(no timers). Commands: `nvim-zoom`, `leader`, `git`, `repo`, `pull`, `jira`, `panel`. When
-installing for someone, tell them it goes into their layout, what it does, and that without it only
-such direct keys stop working (the leader works anyway). Never add it to a layout without asking.
+(no timers). Commands: `nvim-zoom`, `leader`, `git`, `repo`, `pull`, `jira`, `panel`, `card:<KEY>`,
+`list:<id>`, `show:<KEY>`. When installing for someone, tell them it goes into their layout, what it
+does, and that without it only such direct keys stop working (the leader works anyway). Never add it
+to a layout without asking.
 
 ## Files
 
 - `mod/` — the mod (installed as `mods/herdr-flow`). `main.js` picks the screen from props.
+- `mod/jira/` — Jira integration: counter bar, menus, card preview, side panel (`jira-view`) with 👍 comment reactions.
 - `tests/` — `node --test` for pure modules.
 - `scripts/install.sh` — install / update.
 - `NOTICE` — the leader screen is a fork of DanielFGray/herdr-config `mods/prefix` (Apache-2.0).

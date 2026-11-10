@@ -1,8 +1,8 @@
 // The Jira data the screens use: the real API, or invented data in demo mode (writes do nothing).
 import { notify } from "herdr";
 import { isDemo } from "../demo.js";
-import * as api from "./api.js";
-import { demo } from "./demoData.js";
+import * as api from "./jiraApi.js";
+import { demo } from "./jiraDemoData.js";
 
 /** @typedef {import("../types.js").Issue} Issue */
 /** @typedef {import("../types.js").IssueFull} IssueFull */
@@ -15,6 +15,7 @@ import { demo } from "./demoData.js";
  * @typedef {object} JiraApi
  * @property {() => Promise<Issue[]>} myIssues
  * @property {() => Promise<Issue[]>} recentIssues
+ * @property {(jql: string, max?: number) => Promise<Issue[]>} searchIssues
  * @property {(key: string) => Promise<Issue>} issue
  * @property {(key: string) => Promise<IssueFull>} issueFull
  * @property {(key: string) => Promise<Transition[]>} transitions
@@ -25,6 +26,7 @@ import { demo } from "./demoData.js";
  * @property {(key: string) => string} browseUrl
  * @property {(id: string) => string} attachmentUrl
  * @property {(att: Attachment) => Promise<string | null>} cacheImage
+ * @property {(commentId: string, wantLiked: boolean) => Promise<unknown>} toggleCommentLike
  */
 /** @typedef {JiraApi & { demo: boolean }} JiraSource */
 
@@ -35,6 +37,7 @@ const demoWrite = async () => notify({ title: "herdr-flow", body: "demo mode: no
  * @returns {Promise<JiraSource>}
  */
 export async function jiraSource() {
-  if (await isDemo()) return { ...demo, transition: demoWrite, assign: demoWrite, demo: true };
+  if (await isDemo())
+    return { ...demo, transition: demoWrite, assign: demoWrite, toggleCommentLike: demoWrite, demo: true };
   return { ...api, demo: false };
 }

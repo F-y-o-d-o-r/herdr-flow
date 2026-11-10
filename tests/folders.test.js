@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseRepoList } from "../mod/repoList.js";
+import { parseRepoList } from "../mod/repoListHelpers.js";
 
 test("parseRepoList reads name and branch per line", () => {
   assert.deepEqual(parseRepoList("api\tmain\nweb\t\n"), [

@@ -6,9 +6,10 @@ import { appHome, exec } from "herdr";
 /** @typedef {import("../types.js").IssueFull} IssueFull */
 /** @typedef {import("../types.js").Attachment} Attachment */
 /** @typedef {import("../types.js").Person} Person */
-/** @typedef {{ base: string, netrc: string, sprintField: string | null | undefined }} Site */
+/** @typedef {{ base: string, netrc: string, sprintField: string | null | undefined, cloudId?: string | null, myId?: string | null }} Site */
 
-import { adfText, attachmentsFrom, checklistFrom, customFieldsFrom, issueRow, personOf } from "./format.js";
+import { adfText, attachmentsFrom, checklistFrom, customFieldsFrom, issueRow, personOf } from "./jiraFormatHelpers.js";
+import { REACTION_PROP, buildReactionsGql, mergeCommentLikes, nextLikeProp } from "./commentReactionHelpers.js";
 
 const NETRC_NAME = "herdr-flow.netrc";
 const netrcPath = () => `${appHome()}/${NETRC_NAME}`;
@@ -76,6 +77,28 @@ async function sprintField() {
   return s.sprintField;
 }
 
+/** Lazily fetches and caches cloudId and currentUser accountId on site. */
+async function siteIdentity() {
+  const s = await connection();
+  if (s.cloudId === undefined || s.myId === undefined) {
+    const [c, m] = await Promise.all([
+      s.cloudId !== undefined
+        ? s.cloudId
+        : call("GET", "/_edge/tenant_info")
+            .then((r) => r?.cloudId ?? null)
+            .catch(() => null),
+      s.myId !== undefined
+        ? s.myId
+        : call("GET", "/rest/api/3/myself")
+            .then((r) => r?.accountId ?? null)
+            .catch(() => null),
+    ]);
+    s.cloudId = c;
+    s.myId = m;
+  }
+  return { cloudId: s.cloudId, myId: s.myId };
+}
+
 async function fieldList() {
   const sprint = await sprintField();
   return [...BASE_FIELDS, ...MORE_FIELDS, ...(sprint ? [sprint] : [])];
@@ -94,6 +117,7 @@ async function search(jql, maxResults) {
 
 export const myIssues = () => search(ASSIGNED_JQL, 50);
 export const recentIssues = () => search(HISTORY_JQL, 30);
+export const searchIssues = (/** @type {string} */ jql, max = 50) => search(jql, max);
 export const browseUrl = (/** @type {string} */ key) => `${site?.base ?? ""}/browse/${key}`;
 const issuePath = (/** @type {string} */ key, rest = "") => `/rest/api/3/issue/${encodeURIComponent(key)}${rest}`;
 
@@ -116,16 +140,33 @@ export async function issue(key) {
  */
 export async function issueFull(key) {
   await sprintField();
-  const [r, c, list] = await Promise.all([
+  const [r, c, list, ident] = await Promise.all([
     call("GET", issuePath(key, "?fields=*all&expand=names")),
-    call("GET", issuePath(key, "/comment?orderBy=-created&maxResults=50")).catch(() => null),
+    call("GET", issuePath(key, "/comment?orderBy=-created&maxResults=50&expand=properties")).catch(() => null),
     call("GET", issuePath(key, "/properties/checklist")).catch(() => null),
+    siteIdentity(),
   ]);
-  const comments = (c?.comments ?? []).map((/** @type {any} */ m) => ({
-    author: m.author?.displayName ?? "",
-    created: m.created,
-    body: adfText(m.body).trim(),
-  }));
+  const rawComments = c?.comments ?? [];
+  const gqlQuery =
+    rawComments.length > 0
+      ? buildReactionsGql(
+          ident.cloudId,
+          r?.id,
+          rawComments.map((/** @type {any} */ m) => m.id),
+        )
+      : null;
+  const gqlRes = gqlQuery ? await call("POST", "/gateway/api/graphql", { query: gqlQuery }).catch(() => null) : null;
+  const comments = rawComments.map((/** @type {any} */ m, /** @type {number} */ idx) => {
+    const prop = (m.properties ?? []).find((/** @type {any} */ p) => p.key === REACTION_PROP)?.value;
+    const gqlEdges = gqlRes?.data?.[`c${idx}`]?.edges;
+    return {
+      id: String(m.id ?? ""),
+      author: m.author?.displayName ?? "",
+      created: m.created,
+      body: adfText(m.body).trim(),
+      ...mergeCommentLikes({ gqlEdges, propValue: prop, myAccountId: ident.myId }),
+    };
+  });
   return {
     ...issueRow(r, { sprintField: site.sprintField }),
     description: adfText(r.fields?.description).trim(),
@@ -198,4 +239,18 @@ export async function assignable(key, query) {
   const q = `issueKey=${encodeURIComponent(key)}&query=${encodeURIComponent(query)}&maxResults=20`;
   const r = await call("GET", `/rest/api/3/user/assignable/search?${q}`);
   return (r ?? []).map(personOf);
+}
+
+/**
+ * Toggles the user's thumbs-up reaction on a comment.
+ * @param {string} commentId
+ * @param {boolean} wantLiked
+ * @returns {Promise<unknown>}
+ */
+export async function toggleCommentLike(commentId, wantLiked) {
+  const { myId } = await siteIdentity();
+  if (!myId || !commentId) return null;
+  const path = `/rest/api/3/comment/${encodeURIComponent(commentId)}/properties/${REACTION_PROP}`;
+  const cur = await call("GET", path).catch(() => null);
+  return call("PUT", path, nextLikeProp(cur?.value, myId, wantLiked));
 }

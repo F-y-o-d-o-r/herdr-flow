@@ -3,7 +3,7 @@
 import { appHome, exec } from "herdr";
 
 /** @typedef {import("./types.js").RepoList} RepoList */
-/** @typedef {import("./git/pullStatus.js").PullRow} PullRow */
+/** @typedef {import("./git/pullStatusHelpers.js").PullRow} PullRow */
 
 /** Is demo mode on? Checked once per screen open. */
 export async function isDemo() {

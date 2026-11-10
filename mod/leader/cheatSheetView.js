@@ -4,7 +4,7 @@ import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 
 /** @typedef {import("../types.js").Theme} Theme */
-/** @typedef {import("./bindings.js").Bindings} Bindings */
+/** @typedef {import("./bindingHelpers.js").Bindings} Bindings */
 /** @typedef {import("gpui-kit").Element} Element */
 /** @typedef {{ action: string, label: string, hint: string, keys: string[] }} SheetRow */
 

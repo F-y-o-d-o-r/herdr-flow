@@ -4,12 +4,12 @@
 // (leader "repo:<action>") it runs <action> after the cd, or at once when the focused
 // terminal is already in a repo. All work finishes before the popup closes.
 import { closeOverlay, exec, focused, hc, notify, panes, props, run, setShared, shared, theme } from "herdr";
-import { runAction } from "../leader/actions.js";
-import { keyed, onListKey } from "../pickerKeys.js";
+import { runAction } from "../leader/leaderActionHelpers.js";
+import { keyed, onListKey } from "../pickerKeyHelpers.js";
 import { SEARCH_FOOTER, centered, footer, header, screenCard } from "../pickerView.js";
-import { repoRoot } from "../folders.js";
-import { filterRepos, repoRows } from "./repoRows.js";
-import { spaceRepos } from "./source.js";
+import { repoRoot } from "../folderHelpers.js";
+import { filterRepos, repoRows } from "./repoRowHelpers.js";
+import { spaceRepos } from "./gitDataSource.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").KeyEvent} KeyEvent */

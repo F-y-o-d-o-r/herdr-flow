@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isActionAvailable, mergeBindings, parseOverrides } from "../mod/leader/bindings.js";
+import { isActionAvailable, mergeBindings, parseOverrides } from "../mod/leader/bindingHelpers.js";
 
 test("mergeBindings: null removes a key, new keys are added, others kept", () => {
   const merged = mergeBindings({ a: ["x", "A"], c: ["z", "C"] }, { a: null, b: ["y", "B"] });

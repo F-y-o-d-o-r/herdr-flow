@@ -1,64 +1,50 @@
 // The Jira popup (leader J): a list of issues, then one issue's card with what to do.
-//   a Assigned: open issues on me (not done, not Reject), the current branch's first.
-//   h History: issues I viewed, moved or reassigned in the last 14 days.
-//   /1307 or /KEY-1307: any issue by key (bare number: current branch's or my usual project).
+// Mode: configurable counter lists (Review, Tasks, Sandbox) + History + search by key (/1307).
 // Card: preview, then t Take · m Move (then Reassign) · r Reassign · o browser · O side panel.
 import { div } from "gpui-kit";
 import { v_flex } from "gpui-base";
-import { agents, closeOverlay, focused, props, theme } from "herdr";
-import { currentIssueKey } from "./currentKey.js";
-import { defaultProject } from "./format.js";
-import { jiraSource } from "./source.js";
-import { preview, rowView } from "./cardPreview.js";
-import * as steps from "./jiraSteps.js";
-import { keyed, onListKey } from "../pickerKeys.js";
+import { agents, appHome, closeOverlay, focused, props, readTextFile, setShared, shared, theme } from "herdr";
+import { currentIssueKey } from "./branchKeyHelpers.js";
+import { jiraSource } from "./jiraDataSource.js";
+import { FOOTERS, assignRows, byKeyRow, cardRows, issueMeta, modeRows, preview, rowView } from "./issueCardHelpers.js";
+import { COUNTERS_FILE, COUNTERS_SHARED, DEFAULT_COUNTERS, parseCounters } from "./counterHelpers.js";
+import { searchPeople } from "./issueActionSteps.js";
+import { keyed, onListKey } from "../pickerKeyHelpers.js";
 import { SEARCH_FOOTER, centered, footer, header, screenCard } from "../pickerView.js";
-import { ago } from "../time.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").KeyEvent} KeyEvent */
 /** @typedef {import("../types.js").FocusHandle} FocusHandle */
 /** @typedef {import("../types.js").Issue} Issue */
-/** @typedef {import("../types.js").Person} Person */
 /** @typedef {import("../types.js").Row} Row */
-/** @typedef {import("./source.js").JiraSource} JiraSource */
-/** @typedef {Person & { hint?: string }} Suggestion */
-
-/** @type {Record<string, string>} */
-const FOOTERS = {
-  mode: "a assigned · h history · /1307 any issue · esc close",
-  issues: "1-9 a-z open · / search, /1307 any issue · ↑↓ ctrl-j k · esc back",
-  card: "t take · m move · r reassign · o browser · O side panel · esc back",
-  assign: "1-9 pick · / search people · esc keep",
-};
-
-/** @param {Issue} i */
-const issueMeta = (i) => [ago(i.updated), i.reporter && `by ${i.reporter.name}`].filter(Boolean).join(" · ");
+/** @typedef {import("./jiraDataSource.js").JiraSource} JiraSource */
+/** @typedef {import("./counterHelpers.js").CounterState} CounterState */
+/** @typedef {import("../types.js").Person & { hint?: string }} Suggestion */
 
 export class JiraScreen {
   /** @type {FocusHandle} */ handle = null;
   /** @type {JiraSource} */ jira = null;
   step = "mode";
-  /** @type {string | null} "assigned" or "history" */ list = null;
+  list = /** @type {string | null} */ (null);
   filter = "";
   searching = false;
   at = 0;
-  /** @type {string | null} */ error = null;
-  /** loading the lists failed (no login, bad token, no network); shown on every step */
-  /** @type {string | null} */ loadError = null;
-  /** @type {string | null} */ busy = null;
-  /** @type {Issue[] | null} */ issues = null;
-  /** @type {Issue[] | null} */ recent = null;
-  /** @type {string | null} */ current = null;
-  /** @type {Issue | null} */ picked = null;
-  /** @type {Row[]} */ options = [];
+  error = /** @type {string | null} */ (null);
+  loadError = /** @type {string | null} */ (null);
+  busy = /** @type {string | null} */ (null);
+  counters = /** @type {CounterState[]} */ ([]);
+  /** @type {Map<string, Issue[]>} */ listIssues = new Map();
+  recent = /** @type {Issue[] | null} */ (null);
+  current = /** @type {string | null} */ (null);
+  picked = /** @type {Issue | null} */ (null);
+  options = /** @type {Row[]} */ ([]);
   optionsTitle = "";
   afterMove = false;
-  /** @type {Suggestion[]} */ suggested = [];
-  /** @type {Suggestion[]} */ found = [];
-  /** @type {string | null} */ note = null;
-  /** @type {ReturnType<typeof focused>} */ focusedAtOpen = null;
-  /** @type {import("herdr").AgentInfo | null} */ here = null;
+  suggested = /** @type {Suggestion[]} */ ([]);
+  found = /** @type {Suggestion[]} */ ([]);
+  note = /** @type {string | null} */ (null);
+  focusedAtOpen = /** @type {ReturnType<typeof focused>} */ (null);
+  here = /** @type {import("herdr").AgentInfo | null} */ (null);
 
   /**
    * @param {Cx} cx
@@ -68,29 +54,63 @@ export class JiraScreen {
     this.handle = cx.focus_handle();
     cx.timer.after(0, () => this.handle.focus());
     Object.assign(this, { step: "mode", list: null, filter: "", searching: false, at: 0, error: null, busy: null });
-    Object.assign(this, { issues: null, recent: null, current: null, picked: null, options: [], afterMove: false });
+    Object.assign(this, { current: null, picked: null, options: [], afterMove: false, listIssues: new Map() });
+    this.initCounters();
     this.focusedAtOpen = focused();
     this.here = this.focusedAtOpen?.terminal
       ? (agents().find((a) => a.address === this.focusedAtOpen.terminal) ?? null)
       : null;
+    if (p.list) this.go("issues", cx, p.list);
     cx.spawn(async (cx) => {
       await this.load();
       cx.notify();
       if (p.card) this.open({ key: p.card }, cx);
-      else if (p.list) this.go("issues", cx, p.list);
     });
+  }
+
+  initCounters() {
+    const cached = /** @type {any} */ (shared(COUNTERS_SHARED));
+    this.counters =
+      cached?.items && Array.isArray(cached.items)
+        ? cached.items
+        : DEFAULT_COUNTERS.map((c) => ({ ...c, count: 0, issues: [] }));
+    for (const c of this.counters) if (c.issues) this.listIssues.set(c.id, c.issues);
   }
 
   async load() {
     this.jira = await jiraSource();
     this.current = this.jira.demo ? null : await currentIssueKey(this.focusedAtOpen);
-    const [mine, recent] = await Promise.allSettled([this.jira.myIssues(), this.jira.recentIssues()]);
-    if (mine.status === "rejected") this.loadError = mine.reason?.message ?? String(mine.reason);
-    this.issues = mine.status === "fulfilled" ? mine.value : [];
-    this.recent = recent.status === "fulfilled" ? recent.value : [];
-    if (!this.current || this.issues.some((i) => i.key === this.current)) return;
-    const own = await this.jira.issue(this.current).catch(() => null);
-    if (own) this.issues.unshift(own);
+    const text = await readTextFile(`${appHome()}/${COUNTERS_FILE}`).catch(() => null);
+    const { counters } = parseCounters(text);
+    const [recentRes, ...countRes] = await Promise.allSettled([
+      this.jira.recentIssues(),
+      ...counters.map((c) => this.jira.searchIssues(c.jql, 50)),
+    ]);
+    this.recent = recentRes.status === "fulfilled" ? recentRes.value : [];
+    if (recentRes.status === "rejected" && !this.counters.length) {
+      this.loadError = recentRes.reason?.message ?? String(recentRes.reason);
+    }
+    this.counters = counters.map((counter, index) => {
+      const result = countRes[index];
+      const issues = result.status === "fulfilled" ? result.value : [];
+      if (result.status === "rejected" && !this.loadError) {
+        this.loadError = result.reason?.message ?? String(result.reason);
+      }
+      this.listIssues.set(counter.id, issues);
+      return { ...counter, count: issues.length, issues };
+    });
+    await this.includeCurrentBranchIssue();
+    setShared(COUNTERS_SHARED, { at: Date.now(), items: this.counters });
+  }
+
+  async includeCurrentBranchIssue() {
+    if (!this.current) return;
+    for (const [, issues] of this.listIssues) {
+      if (issues.some((issue) => issue.key === this.current)) return;
+      const own = await this.jira.issue(this.current).catch(() => null);
+      if (own) issues.unshift(own);
+      return;
+    }
   }
 
   close() {
@@ -109,16 +129,16 @@ export class JiraScreen {
   }
 
   /**
-   * "1307" / "ab-1307" typed: a row that opens that issue.
    * @param {string} q
    * @returns {Row[]}
    */
   byKey(q) {
-    const m = q.match(/^(?:([a-z]+)-)?(\d+)$/);
-    const project = m && (m[1]?.toUpperCase() ?? defaultProject({ currentKey: this.current, issues: this.issues }));
-    if (!project) return [];
-    const key = `${project}-${m[2]}`;
-    return [{ byKey: true, label: key, sub: "open by key", act: (cx) => this.open({ key }, cx) }];
+    const issues = [...this.listIssues.values()].flat();
+    return byKeyRow(q, {
+      current: this.current,
+      issues,
+      onOpen: (key) => (cx) => this.open({ key }, cx),
+    });
   }
 
   /**
@@ -126,9 +146,10 @@ export class JiraScreen {
    * @returns {Row[]}
    */
   issueRows(q) {
-    const all = [...((this.list === "history" ? this.recent : this.issues) ?? [])];
-    if (this.list !== "history" && this.current)
+    const all = [...(this.list === "history" ? (this.recent ?? []) : (this.listIssues.get(this.list) ?? []))];
+    if (this.list !== "history" && this.current) {
       all.sort((a, b) => Number(b.key === this.current) - Number(a.key === this.current));
+    }
     /** @type {Row[]} */
     const rows = all
       .filter((i) => !q || `${i.key} ${i.summary}`.toLowerCase().includes(q))
@@ -146,7 +167,6 @@ export class JiraScreen {
   }
 
   /**
-   * Shows an issue's card, loading it when only its key is known.
    * @param {Partial<Issue> & { key: string }} i
    * @param {Cx} cx
    */
@@ -167,61 +187,20 @@ export class JiraScreen {
   }
 
   /** @returns {Row[]} */
-  cardRows() {
-    return [
-      { key: "t", label: "Take", hint: "send to an agent", act: (cx) => steps.loadAgents(this, cx) },
-      { key: "m", label: "Move", hint: "change status", act: (cx) => steps.loadTransitions(this, cx) },
-      { key: "r", label: "Reassign", hint: "who gave it to you first", act: (cx) => steps.toAssign(this, cx) },
-      { key: "o", label: "Open in browser", hint: "Jira", act: (cx) => steps.openInBrowser(this, cx) },
-      {
-        key: "O",
-        label: "Open in the side panel",
-        hint: "description, comments, links",
-        act: () => steps.openInPanel(this),
-      },
-    ];
-  }
-
-  /** @returns {Row[]} */
-  assignRows() {
-    const typing = Boolean(this.filter.trim());
-    const people = typing ? this.found : this.suggested;
-    /** @type {Row[]} */
-    const rows = people.map((p, n) => ({
-      label: `${!typing && n === 0 && p.hint === "gave it to you" ? "← " : ""}${p.name}`,
-      hint: p.hint ?? "",
-      act: (cx) => steps.reassign(this, cx, p),
-    }));
-    return typing ? rows : [...rows, { label: `Keep: ${this.picked.assignee}`, hint: "esc", act: () => this.close() }];
-  }
-
-  /** @returns {Row[]} */
   rows() {
     const q = this.filter.trim().toLowerCase();
     /** @param {Row} r */
     const match = (r) => !q || `${r.label} ${r.sub ?? ""}`.toLowerCase().includes(q);
-    if (this.step === "mode") {
-      /** @type {Row[]} */
-      const menu = [
-        { key: "a", label: "Assigned", hint: "open issues on you", act: (cx) => this.go("issues", cx, "assigned") },
-        {
-          key: "h",
-          label: "History",
-          hint: "viewed, moved or reassigned by you",
-          act: (cx) => this.go("issues", cx, "history"),
-        },
-      ];
-      return keyed([...menu.filter(match), ...this.byKey(q)]);
-    }
+    if (this.step === "mode") return keyed([...modeRows(this).filter(match), ...this.byKey(q)]);
     if (this.step === "issues") return keyed(this.issueRows(q));
-    if (this.step === "card") return keyed(this.cardRows().filter(match));
-    if (this.step === "assign") return keyed(this.assignRows());
+    if (this.step === "card") return keyed(cardRows(this).filter(match));
+    if (this.step === "assign") return keyed(assignRows(this));
     return keyed(this.options.filter(match));
   }
 
   /** @param {Cx} cx */
   back(cx) {
-    if (this.step === "assign" && this.afterMove) return this.close(); // the status already changed
+    if (this.step === "assign" && this.afterMove) return this.close();
     if (this.step === "options" || this.step === "assign") return this.go("card", cx);
     if (this.step === "card") return this.go(this.list ? "issues" : "mode", cx);
     if (this.step === "issues") return this.go("mode", cx);
@@ -230,9 +209,11 @@ export class JiraScreen {
 
   title() {
     const k = this.picked?.key;
-    /** @type {Record<string, string>} */
-    const titles = { mode: "Jira", issues: this.list === "history" ? "History" : "Assigned", card: k };
-    return titles[this.step] ?? (this.step === "assign" ? `${k} · assign to` : `${k} · ${this.optionsTitle}`);
+    if (this.step === "issues")
+      return this.list === "history" ? "History" : (this.counters.find((x) => x.id === this.list)?.label ?? "Issues");
+    if (this.step === "card") return k;
+    if (this.step === "assign") return `${k} · assign to`;
+    return this.step === "options" ? `${k} · ${this.optionsTitle}` : "Jira";
   }
 
   /**
@@ -245,15 +226,15 @@ export class JiraScreen {
     if (this.busy) return e.key === "escape" && this.back(cx);
     const before = this.filter;
     const redraw = onListKey(this, e, list, { act: (r) => r.act(cx), back: () => this.back(cx) });
-    if (this.step === "assign" && this.filter !== before) steps.searchPeople(this, cx);
+    if (this.step === "assign" && this.filter !== before) searchPeople(this, cx);
     if (redraw) cx.notify();
   }
 
   render() {
-    const t = /** @type {any} */ (theme()); // theme() is Record<string, string>; colors want `#…`
+    const t = /** @type {any} */ (theme());
     const list = this.rows();
     if (this.at >= list.length) this.at = Math.max(0, list.length - 1);
-    const loading = this.step === "issues" && !(this.list === "history" ? this.recent : this.issues);
+    const loading = this.step === "issues" && !(this.list === "history" ? this.recent : this.listIssues.get(this.list));
     const note = this.step === "assign" ? this.note : null;
     const body = v_flex()
       .id("jira-list")

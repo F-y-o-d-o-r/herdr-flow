@@ -8,8 +8,8 @@
 // list:<assigned|history> (the Jira popup on that list), show:<KEY> (that issue in the side panel).
 import { div } from "gpui-kit";
 import { exec, nextCommand, run, setShared } from "herdr";
-import { MOD, openNvimZoomed, openScreenNow } from "./leader/actions.js";
-import { PANEL } from "./jira/jiraSteps.js";
+import { MOD, openNvimZoomed, openScreenNow } from "./leader/leaderActionHelpers.js";
+import { PANEL } from "./jira/issueActionSteps.js";
 
 const SCREEN_COMMANDS = new Set(["leader", "git", "repo", "pull", "jira"]);
 

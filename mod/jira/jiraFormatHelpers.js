@@ -233,3 +233,44 @@ export function agentPrompt(i) {
     "Then give me your analysis and a plan. Do not start coding yet.",
   ].join("\n");
 }
+
+/**
+ * @param {string | undefined | null} priority
+ * @returns {{ icon: string, colorKey: "ansi1" | "ansi3" | "ansi4" | "muted" } | null}
+ */
+export function priorityMeta(priority) {
+  if (!priority) return null;
+  const text = priority.toLowerCase();
+  if (/highest|blocker|critical/.test(text)) return { icon: "⇈", colorKey: "ansi1" };
+  if (/high/.test(text)) return { icon: "↑", colorKey: "ansi1" };
+  if (/lowest/.test(text)) return { icon: "⇊", colorKey: "muted" };
+  if (/low/.test(text)) return { icon: "↓", colorKey: "ansi4" };
+  return { icon: "=", colorKey: "ansi3" };
+}
+
+/**
+ * @param {string | undefined | null} issueType
+ * @returns {{ icon: string, colorKey: "ansi1" | "ansi2" | "ansi4" | "ansi5" } | null}
+ */
+export function issueTypeMeta(issueType) {
+  if (!issueType) return null;
+  const text = issueType.toLowerCase();
+  if (/bug|ошиб|баг/.test(text)) return { icon: "●", colorKey: "ansi1" };
+  if (/story|истор/.test(text)) return { icon: "◈", colorKey: "ansi2" };
+  if (/epic|эпик/.test(text)) return { icon: "⚡", colorKey: "ansi5" };
+  return { icon: "✓", colorKey: "ansi4" };
+}
+
+/**
+ * @param {string | undefined | null} status
+ * @returns {"ansi1" | "ansi2" | "ansi3" | "accent" | "foreground"}
+ */
+export function statusColorKey(status) {
+  if (!status) return "foreground";
+  const text = status.toLowerCase();
+  if (/paused|reject|blocked/.test(text)) return "ansi1";
+  if (/review|test|qa|reproduce|analyze/.test(text)) return "ansi3";
+  if (/done|deployed|закрыт|ready/.test(text)) return "ansi2";
+  if (/progress|работ/.test(text)) return "accent";
+  return "foreground";
+}

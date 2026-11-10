@@ -5,13 +5,14 @@
 //   { role: "router" }                                empty floating block for keys.json commands
 import { View, div } from "gpui-kit";
 import { props, setShared, shared } from "herdr";
-import { NEXT_SCREEN } from "./leader/actions.js";
+import { NEXT_SCREEN } from "./leader/leaderActionHelpers.js";
 import { LeaderScreen } from "./leader/leaderView.js";
 import { LazygitScreen } from "./git/lazygitScreen.js";
 import { PullScreen } from "./git/pullScreen.js";
 import { RepoScreen } from "./git/repoScreen.js";
 import { JiraScreen } from "./jira/jiraScreen.js";
-import { PanelView } from "./jira/panelView.js";
+import { PanelView } from "./jira/sidePanelView.js";
+import { BarView } from "./jira/counterBarView.js";
 import { RouterView } from "./router.js";
 
 /** @typedef {import("./types.js").Cx} Cx */
@@ -31,6 +32,7 @@ const SCREENS = {
   pull: PullScreen,
   jira: JiraScreen,
   panel: PanelView,
+  bar: BarView,
   router: RouterView,
 };
 const NEXT_FRESH_MS = 1500; // a request older than this is stale (the popup never opened)
@@ -49,7 +51,8 @@ function takeNextScreen() {
  */
 function pickView(p) {
   const asked = p.role || p.view || p.screen ? null : takeNextScreen();
-  const name = p.role ?? (p.view === "panel" ? "panel" : null) ?? p.screen ?? asked?.screen ?? "leader";
+  const name =
+    p.role ?? (p.view === "panel" ? "panel" : p.view === "bar" ? "bar" : null) ?? p.screen ?? asked?.screen ?? "leader";
   const Screen = SCREENS[name];
   return Screen ? { view: new Screen(), props: { ...p, ...asked?.props } } : null;
 }

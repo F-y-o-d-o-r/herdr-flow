@@ -53,7 +53,7 @@
  * @property {string} [url]
  */
 
-/** @typedef {{ author: string, created: string, body: string }} Comment */
+/** @typedef {{ id?: string, author: string, created: string, body: string, likes?: number, liked?: boolean }} Comment */
 /** @typedef {{ progress: string, summary: string, done: boolean, unchecked: number }} Checklist */
 /** @typedef {{ id: string, name: string, mime: string, sizeText: string, isImage: boolean }} Attachment */
 /** @typedef {{ name: string, text: string }} CustomField */

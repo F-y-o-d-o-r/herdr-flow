@@ -4,15 +4,15 @@
 // Fork of DanielFGray/herdr-config mods/prefix (Apache-2.0), see NOTICE.
 import { v_flex } from "gpui-base";
 import { appHome, closeOverlay, commands, exec, props, readTextFile, theme } from "herdr";
-import { MOD, openNvimZoomed, runAction } from "./actions.js";
-import { OVERRIDES_FILE, isActionAvailable, mergeBindings, parseOverrides } from "./bindings.js";
-import { cheatSheet, orderedHits } from "./cheatSheet.js";
-import { latin } from "../pickerKeys.js";
+import { MOD, openNvimZoomed, runAction } from "./leaderActionHelpers.js";
+import { OVERRIDES_FILE, isActionAvailable, mergeBindings, parseOverrides } from "./bindingHelpers.js";
+import { cheatSheet, orderedHits } from "./cheatSheetView.js";
+import { latin } from "../pickerKeyHelpers.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").KeyEvent} KeyEvent */
 /** @typedef {import("../types.js").FocusHandle} FocusHandle */
-/** @typedef {import("./bindings.js").Bindings} Bindings */
+/** @typedef {import("./bindingHelpers.js").Bindings} Bindings */
 
 const MODIFIERS = new Set(["shift", "control", "ctrl", "alt", "cmd", "platform", "function", "fn", "super"]);
 const NAMED = new Set(["escape", "enter", "backspace", "up", "down", "left", "right", "tab"]);

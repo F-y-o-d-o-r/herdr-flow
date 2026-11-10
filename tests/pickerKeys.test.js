@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { keyed, latin, onListKey } from "../mod/pickerKeys.js";
+import { keyed, latin, onListKey } from "../mod/pickerKeyHelpers.js";
 
 test("keyed gives fixed keys, then 1-9, then free letters", () => {
   const rows = keyed([{ key: "p" }, ...Array.from({ length: 11 }, () => ({}))]);

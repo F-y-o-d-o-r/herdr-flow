@@ -1,12 +1,13 @@
 // What the Jira card's keys do. Each function works on the screen (`s`) and its source (`s.jira`):
 // it sets s.busy while loading, then moves to the next step or closes.
 import { exec, hc, knownAgents, notify, run, setShared, spaces } from "herdr";
-import { workFolder } from "../folders.js";
-import { agentPrompt } from "./format.js";
+import { workFolder } from "../folderHelpers.js";
+import { agentPrompt } from "./jiraFormatHelpers.js";
+import { refreshBarCounters } from "./counterBarView.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").Person} Person */
-/** @typedef {import("./source.js").Transition} Transition */
+/** @typedef {import("./jiraDataSource.js").Transition} Transition */
 /** @typedef {import("./jiraScreen.js").JiraScreen} JiraScreen */
 /** @typedef {import("./jiraScreen.js").Suggestion} Suggestion */
 /** @typedef {Awaited<ReturnType<typeof knownAgents>>[number]} KnownAgent */
@@ -79,6 +80,7 @@ function move(s, cx, t) {
   step(s, cx, `${key} → ${t.to}…`, async () => {
     await s.jira.transition(key, t.id);
     if (!s.jira.demo) notify({ title: "Jira", body: `${key} → ${t.to}`, level: "info" });
+    refreshBarCounters();
     s.afterMove = true;
     await loadPeople(s, cx, `${key} → ${t.to} ✓ · reassign?`);
   });
@@ -150,6 +152,7 @@ export function reassign(s, cx, p) {
   step(s, cx, `${key} → ${p.name}…`, async () => {
     await s.jira.assign(key, p.id);
     if (!s.jira.demo) notify({ title: "Jira", body: `${key} assigned to ${p.name}`, level: "info" });
+    refreshBarCounters();
     s.close();
   });
 }

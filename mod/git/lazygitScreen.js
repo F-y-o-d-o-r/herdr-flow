@@ -1,13 +1,13 @@
 // lazygit screen: the repo of the focused terminal, or of the program in it (nvim after its own
 // cd), opens lazygit in a new tab at once; else a list of the space's repos. p = Pull all.
 import { closeOverlay, focused, props, run, theme } from "herdr";
-import { openScreen } from "../leader/actions.js";
-import { keyed, onListKey } from "../pickerKeys.js";
+import { openScreen } from "../leader/leaderActionHelpers.js";
+import { keyed, onListKey } from "../pickerKeyHelpers.js";
 import { SEARCH_FOOTER, centered, footer, header, screenCard } from "../pickerView.js";
-import { foregroundCwd, repoRoot } from "../folders.js";
+import { foregroundCwd, repoRoot } from "../folderHelpers.js";
 import { isDemo } from "../demo.js";
-import { filterRepos, repoRows } from "./repoRows.js";
-import { spaceRepos } from "./source.js";
+import { filterRepos, repoRows } from "./repoRowHelpers.js";
+import { spaceRepos } from "./gitDataSource.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").KeyEvent} KeyEvent */
