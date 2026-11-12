@@ -1,15 +1,15 @@
 // The router: an empty floating block (props { role: "router" }), always on screen and drawing
 // nothing, so it receives `herdr-flow.<command>` from keys.json. Herdr's keys can only open a mod
 // as a whole (mod.open), so a direct key for one action inside herdr-flow goes through here.
-// It waits for a command; no timers, no polling. Without it only such direct keys don't work;
-// the leader (ctrl-a / ctrl-;) works anyway.
 // Commands: nvim-zoom (herdr-nvim's nvim + tree, nvim pane zoomed), leader, git, repo, pull, jira,
-// open-next (the screen the leader just asked for), panel (toggle the Jira side panel), card:<KEY> (the Jira popup on that issue's card),
-// list:<assigned|history> (the Jira popup on that list), show:<KEY> (that issue in the side panel).
+// open-next (the screen the leader just asked for), panel (toggle the Jira side panel), card:<KEY>,
+// list:<assigned|history>, show:<KEY>, bots-save (snapshot agents), bots-restore (restore agents).
+// Also manages startup auto-restore of bot sessions and periodic background session sync.
 import { div } from "gpui-kit";
 import { exec, nextCommand, run, setShared } from "herdr";
 import { MOD, openNvimZoomed, openScreenNow } from "./leader/leaderActionHelpers.js";
 import { PANEL } from "./jira/issueActionSteps.js";
+import { autoRestoreBots, syncBotSnapshot } from "./botSessionHelpers.js";
 
 const SCREEN_COMMANDS = new Set(["leader", "git", "repo", "pull", "jira"]);
 
@@ -21,6 +21,8 @@ async function openNextAfterClose() {
 
 /** @param {string} command */
 async function routeCommand(command) {
+  if (command === "bots-save") return syncBotSnapshot(true);
+  if (command === "bots-restore") return autoRestoreBots(true);
   if (command === "nvim-zoom") return openNvimZoomed();
   if (command === "open-next") return openNextAfterClose();
   if (command === "panel") return run("layout.toggle", { id: PANEL.block });
@@ -37,6 +39,15 @@ async function routeCommand(command) {
 export class RouterView {
   /** @param {import("./types.js").Cx} cx */
   init(cx) {
+    cx.spawn(async () => {
+      await exec("sleep", ["1.5"]).catch(() => null);
+      await autoRestoreBots().catch(() => null);
+    });
+
+    cx.timer.every(5000, async () => {
+      await syncBotSnapshot().catch(() => null);
+    });
+
     cx.spawn(async () => {
       for (;;) {
         const command = await nextCommand().catch(() => null);

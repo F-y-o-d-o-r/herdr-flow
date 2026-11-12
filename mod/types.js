@@ -65,4 +65,25 @@
  * @typedef {Issue & { comments: Comment[], checklist: Checklist | null, attachments: Attachment[], fields: CustomField[], pinnedFields?: PinnedField[] }} IssueFull
  */
 
+/**
+ * @typedef {object} BotSession
+ * @property {string} pane
+ * @property {string} tab
+ * @property {string} tab_name
+ * @property {string} space
+ * @property {string} space_name
+ * @property {string} cwd
+ * @property {string | null} app
+ * @property {string} command
+ */
+
+/**
+ * @typedef {object} RestorationPlanItem
+ * @property {string} pane
+ * @property {string} terminal
+ * @property {string} cwd
+ * @property {string} command
+ * @property {string | null} app
+ */
+
 export {};

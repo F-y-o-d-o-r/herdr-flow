@@ -53,20 +53,24 @@ Not a user feature — keep it out of README. To retake shots: create the file, 
 through the router (`herdr-app do herdr-flow.<leader|git|repo|pull|jira|list:assigned|card:ACME-311|show:ACME-311>`),
 `herdr-app shot`, crop to the card, then remove the file.
 
-## The router block (direct keys)
+## The router block (direct keys & bot session restore)
 
 Herdr's `keys.json` can only open a mod as a whole (`mod.open:herdr-flow` = the leader). A direct
 key for one action inside herdr-flow (e.g. `cmd-e` → `herdr-flow.nvim-zoom`) needs the **router**:
 an empty floating block in the user's layout (`props: { role: "router" }`, snippet in
-`scripts/layout-snippets.json`). It draws nothing and only waits for `herdr-flow.<command>`
-(no timers). Commands: `nvim-zoom`, `leader`, `git`, `repo`, `pull`, `jira`, `panel`, `card:<KEY>`,
-`list:<id>`, `show:<KEY>`. When installing for someone, tell them it goes into their layout, what it
-does, and that without it only such direct keys stop working (the leader works anyway). Never add it
-to a layout without asking.
+`scripts/layout-snippets.json`). It draws nothing and receives `herdr-flow.<command>`.
+Commands: `nvim-zoom`, `leader`, `git`, `repo`, `pull`, `jira`, `panel`, `card:<KEY>`,
+`list:<id>`, `show:<KEY>`, `bots-save`, `bots-restore`.
+The router also auto-restores open bot sessions across Herdr restarts: on startup (after a 1.5s delay)
+it restores saved agent sessions into candidate empty shell panes, and periodically (every 5 seconds)
+syncs active agent snapshots to `~/.config/herdr-app/data/herdr-flow/bots-session.json`.
+When installing for someone, tell them it goes into their layout, what it does, and that without it
+only such direct keys stop working (the leader works anyway). Never add it to a layout without asking.
 
 ## Files
 
 - `mod/` — the mod (installed as `mods/herdr-flow`). `main.js` picks the screen from props.
+- `mod/botSessionHelpers.js` — auto-save and auto-restore of open bot/agent sessions across Herdr restarts.
 - `mod/jira/` — Jira integration: counter bar, menus, card preview (`c Context` quick paste), side panel (`jira-view`) with 👍 comment reactions, inline editing (`mod/jira/sidePanelEditHelpers.js`: status transitions, assignee picker, pinned date field editor, and `+ Context` agent drafter), and configurable `fields` in `herdr-flow.jira.json`.
 - `tests/` — `node --test` for pure modules.
 - `scripts/install.sh` — install / update.
