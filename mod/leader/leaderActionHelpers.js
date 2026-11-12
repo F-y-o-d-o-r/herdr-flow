@@ -1,8 +1,8 @@
 // What a leader key does. Actions: an app command ("name" / "name:value"), a mod command
 // ("mod.cmd"), "screen:<name>" (a herdr-flow screen), "panel:<id>" (a side-panel child),
-// "repo:<action>" (pick the repo first), "send-key", "sheepdog-toggle", "nvim-zoom" (async: the
+// "repo:<action>" (pick the repo first), "send-key", "nvim-zoom" (async: the
 // caller keeps its popup open until it resolves).
-import { appHome, commands, exec, focused, hc, layout, panes, run, setShared } from "herdr";
+import { commands, exec, focused, hc, layout, panes, run, setShared } from "herdr";
 
 export const MOD = "herdr-flow";
 export const NEXT_SCREEN = "herdrFlow.next";
@@ -87,12 +87,6 @@ function sendKey(key) {
   if (terminal) hc(["keys", terminal, key.replace("-", "+")]);
 }
 
-/** Sheepdog on/off in a detached script: this popup's async work stops when it closes. */
-function toggleSheepdog() {
-  const script = `${appHome()}/mods/${MOD}/leader/sheepdogToggle.sh`;
-  exec("sh", ["-c", `nohup sh "${script}" >/dev/null 2>&1 &`]).catch(() => null);
-}
-
 /** @param {import("herdr").PaneInfo} p */
 const isNvimPane = (p) => p.program?.key === "nvim" || /nvim/i.test(p.program?.name ?? "");
 const ZOOM_WAIT_STEPS = 30; // × 0.1 s
@@ -135,7 +129,6 @@ function withRepo(then) {
  */
 export function runAction(action, key) {
   if (action === "send-key") return sendKey(key);
-  if (action === "sheepdog-toggle") return toggleSheepdog();
   if (action.startsWith("screen:")) return openScreen(action.slice("screen:".length));
   if (action.startsWith("panel:")) return togglePanel(action.slice("panel:".length));
   if (action.startsWith("repo:")) return withRepo(action.slice("repo:".length));

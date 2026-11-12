@@ -46,7 +46,7 @@
   "ctrl-a": ["send-key", "send ctrl-a to terminal", "", "spaces"],
   "b": ["screen:repo", "pick repo for the repo pane", "", "git"],
   "v": ["herdr-nvim.reveal", "jump into file tree", "cmd-shift-e", "agents"],
-  "u": ["sheepdog-toggle", "sheepdog on/off (voice)", "", "tools"],
+  "A": ["panel:automations", "automations panel (scheduled agent runs)", "", "tools"],
   "ctrl-;": ["send-key", "send ctrl-; to terminal", "", "spaces"],
   "-": ["pane.split:down", "split down", "cmd-shift-d", "panes"],
   "|": ["pane.split:right", "split right", "cmd-d", "panes"],

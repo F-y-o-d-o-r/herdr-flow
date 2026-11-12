@@ -63,7 +63,6 @@ const ALWAYS = ["send-key", "screen:", "panel:"];
 export function isActionAvailable(action, { commands, mods }) {
   if (ALWAYS.some((a) => action === a || (a.endsWith(":") && action.startsWith(a)))) return true;
   if (action.startsWith("repo:")) return isActionAvailable(action.slice("repo:".length), { commands, mods });
-  if (action === "sheepdog-toggle") return mods.has("sheepdog");
   if (action === "nvim-zoom") return mods.has("herdr-nvim");
   const [name, value] = action.split(/:(.*)/s);
   if (name === "mod.open") return mods.has(value);
