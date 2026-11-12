@@ -63,6 +63,15 @@ export function panelShows(id) {
 }
 
 /**
+ * Does the layout have that side-panel child at all?
+ * @param {string} id
+ */
+export function panelExists(id) {
+  const root = /** @type {LayoutNode | null} */ (layout());
+  return Boolean(findNode(findNode(root, "panel-body"), id));
+}
+
+/**
  * Shows a side-panel child, or hides the panel when that child already shows.
  * @param {string} id
  */

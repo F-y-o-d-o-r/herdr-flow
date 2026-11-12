@@ -1,8 +1,8 @@
 // Top bar Jira counters widget (tabs-row): R/T/S badges with live counts.
-import { div } from "gpui-kit";
+import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { appHome, notify, readTextFile, setShared, shared, theme } from "herdr";
-import { openScreenNow } from "../leader/leaderActionHelpers.js";
+import { openScreenNow, panelExists, panelShows, togglePanel } from "../leader/leaderActionHelpers.js";
 import {
   COUNTERS_FILE,
   COUNTERS_REFRESH,
@@ -55,6 +55,37 @@ function counterPill(t, counter) {
         .font_semibold()
         .text_color(hasCount ? activeColor : t.muted)
         .child(String(counter.count)),
+    );
+}
+
+const AUTOMATIONS_PANEL = "automations";
+
+/**
+ * Toggle for the herdr-automations side panel; drawn only when the layout has that panel.
+ * Sized like the neighbouring header icon buttons (26px high, 16px icon).
+ * @param {Theme} t
+ */
+function automationsButton(t) {
+  const on = panelShows(AUTOMATIONS_PANEL);
+  return h_flex()
+    .id("jira-bar-automations")
+    .h(26)
+    .px(8)
+    .ml(4)
+    .flex_none()
+    .items_center()
+    .rounded(5)
+    .cursor_pointer()
+    .when(on, (el) => el.bg(t.selected))
+    .hover((el) => el.bg(t.hover))
+    .tooltip("Automations")
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .on_click(() => togglePanel(AUTOMATIONS_PANEL))
+    .child(
+      svg(`mods/${AUTOMATIONS_PANEL}/automations.svg`)
+        .size(16)
+        .flex_none()
+        .text_color(t.ansi6 ?? t.muted),
     );
 }
 
@@ -124,16 +155,17 @@ export class BarView {
 
   render() {
     const t = /** @type {any} */ (theme());
-    return h_flex()
+    const withAutomations = panelExists(AUTOMATIONS_PANEL);
+    const bar = h_flex()
       .id("herdr-flow-jira-bar")
       .size_full()
-      .px(6)
       .gap(4)
       .items_center()
-      .justify_center()
       .bg(t.chrome)
       .border_b(1)
       .border_color(t.border)
       .children(this.items.map((counter) => counterPill(t, counter)));
+    if (!withAutomations) return bar.px(6).justify_center();
+    return bar.pl(6).justify_end().child(automationsButton(t));
   }
 }
