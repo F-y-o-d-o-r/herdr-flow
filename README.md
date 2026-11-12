@@ -140,6 +140,7 @@ Picking an issue displays its card preview: semantic status pill, priority icon 
 
 | Key | What |
 |---|---|
+| `c` | **Context**: paste issue context into the active agent's input line without submitting (no Enter), so you can review and keep typing before sending |
 | `t` | **Take**: start an agent (a new tab with any installed agent, or the agent in your pane) with the issue text: analyze it, find the repo, update the main branch, create a branch by the project's rules (AGENTS.md / CLAUDE.md / `.claude/commands`, else like existing branches), plan before coding |
 | `m` | **Move**: change status (only the transitions Jira allows), then offers Reassign |
 | `r` | **Reassign**: whoever handed it to you first (from the issue history), the reporter, or search |
@@ -152,7 +153,7 @@ Picking an issue displays its card preview: semantic status pill, priority icon 
 
 The **side panel** (`ctrl-a i` or `O` on any card) docks alongside your work:
 
-- **`+ Context` button** in the top badge row: sends the current issue's prompt (`agentPrompt`: key, summary, status, link, description, and branch instructions) directly to the active agent pane (`Current pane · <agent>`) or opens a new agent tab (`New tab · <agent>`) in the project work folder.
+- **`+ Context` button** in the top badge row: pastes the current issue's prompt (`agentPrompt`: key, summary, status, link, description, and branch instructions) directly into the active agent's prompt without submitting, or opens an inline picker to choose an agent / start a new tab with the context placed in the clipboard.
 - **Inline editing right in the side panel**:
   - Click the **Status badge** (`In Progress ▾`) to view and apply Jira transitions in place.
   - Click **`Assignee`** (`@ Name ✎`) in `Details` to reassign (with quick options for the person who handed the issue over, the reporter, or live user search).

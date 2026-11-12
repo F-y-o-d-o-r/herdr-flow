@@ -202,7 +202,7 @@ export function preview(t, issue) {
 export const FOOTERS = {
   mode: "pick a list · / search, /1307 any issue · esc close",
   issues: "1-9 a-z open · / search, /1307 any issue · ↑↓ ctrl-j k · esc back",
-  card: "t take · m move · r reassign · o browser · O side panel · esc back",
+  card: "c context · t take · m move · r reassign · o browser · O side panel · esc back",
   assign: "1-9 pick · / search people · esc keep",
 };
 
@@ -238,6 +238,7 @@ export function modeRows(s) {
  * @returns {Row[]}
  */
 export const cardRows = (s) => [
+  { key: "c", label: "Context", hint: "paste to active agent", act: (cx) => steps.addContext(s, cx) },
   { key: "t", label: "Take", hint: "send to an agent", act: (cx) => steps.loadAgents(s, cx) },
   { key: "m", label: "Move", hint: "change status", act: (cx) => steps.loadTransitions(s, cx) },
   { key: "r", label: "Reassign", hint: "who gave it to you first", act: (cx) => steps.toAssign(s, cx) },

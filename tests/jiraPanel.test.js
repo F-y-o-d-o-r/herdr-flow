@@ -7,6 +7,7 @@ import {
   customFieldsFrom,
   splitImages,
 } from "../mod/jira/jiraFormatHelpers.js";
+import { FOOTERS, cardRows } from "../mod/jira/issueCardHelpers.js";
 
 test("adfText marks images by file name", () => {
   const doc = {
@@ -68,4 +69,16 @@ test("checklistFrom: done state and counts", () => {
   });
   assert.equal(c.done, true);
   assert.equal(c.summary, "update fix");
+});
+
+test("cardRows contains context action with key c", () => {
+  const rows = cardRows(/** @type {import("../mod/jira/jiraScreen.js").JiraScreen} */ ({}));
+  const row = rows.find((r) => r.key === "c");
+  assert.ok(row);
+  assert.equal(row.label, "Context");
+  assert.equal(row.hint, "paste to active agent");
+});
+
+test("FOOTERS.card contains c context", () => {
+  assert.match(FOOTERS.card, /c context/);
 });

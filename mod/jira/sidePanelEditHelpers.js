@@ -1,10 +1,11 @@
 // Actions and keyboard handling for Jira side panel inline editing.
-import { agents, hc, knownAgents, notify, run, spaces } from "herdr";
+import { agents, knownAgents, notify, run, spaces } from "herdr";
 import { latin } from "../pickerKeyHelpers.js";
 import { workFolder } from "../folderHelpers.js";
 import { agentPrompt } from "./jiraFormatHelpers.js";
 import { refreshBarCounters } from "./counterBarView.js";
 import { parseDateInput } from "./sidePanelDateHelpers.js";
+import { copyToClipboard, pasteContextToAgent } from "./agentDraftHelpers.js";
 
 export { formatIsoDate, quickDateOptions, parseDateInput } from "./sidePanelDateHelpers.js";
 export { detailsRows, inlineEditorView, issueBody, issueTopBadges } from "./sidePanelEditUiHelpers.js";
@@ -15,7 +16,8 @@ export { detailsRows, inlineEditorView, issueBody, issueTopBadges } from "./side
 /** @typedef {import("../types.js").KeyEvent} KeyEvent */
 /** @typedef {import("./sidePanelView.js").PanelView} PanelView */
 /** @typedef {import("./jiraDataSource.js").Transition} Transition */
-/** @typedef {{ label: string, hint?: string, agent?: any, address?: string, name?: string }} AgentOption */
+/** @typedef {Awaited<ReturnType<typeof knownAgents>>[number]} KnownAgent */
+/** @typedef {{ label: string, hint?: string, agent?: KnownAgent, address?: string, pane?: string, agentInfo?: import("herdr").AgentInfo, name?: string }} AgentOption */
 
 /** @param {PanelView} p @param {Cx} cx */
 export const closeEditor = (p, cx) => (Object.assign(p, { editMode: null, editQuery: "", editIndex: 0 }), cx.notify());
@@ -33,13 +35,15 @@ export function openEditor(p, mode, cx) {
   } else if (mode === "context") {
     Object.assign(p, { agentOptions: [], agentLoading: true });
     cx.spawn(async (cx) => {
-      const live = agents()[0];
+      const live = agents().find((a) => a.focused) ?? agents()[0] ?? null;
       const liveOpt = live
         ? [
             {
               label: `Current pane · ${live.program?.name ?? live.app ?? "agent"}`,
-              hint: "send task to active agent",
+              hint: "paste context into prompt without sending",
               address: live.address,
+              pane: live.pane,
+              agentInfo: live,
               name: live.program?.name ?? live.app ?? "agent",
             },
           ]
@@ -113,17 +117,46 @@ export function sendToAgent(p, opt, cx) {
   const task = agentPrompt(p.data);
   const key = p.key ?? p.data.key;
   cx.spawn(async (cx) => {
-    if (opt.address) {
-      const r = await hc(["send", opt.address, task]);
-      if (r.code !== 0) throw new Error(r.stderr?.trim() || "hc send failed");
-      notify({ title: "Jira", body: `Sent ${key} to ${opt.name}`, level: "info" });
+    if (opt.address || opt.agentInfo) {
+      await pasteContextToAgent({
+        target: opt.agentInfo ?? { address: opt.address, pane: opt.pane },
+        text: task,
+        key,
+        name: opt.name,
+      });
     } else if (opt.agent) {
       const folder = (await workFolder(null)) ?? spaces().find((x) => x.active)?.folder ?? null;
-      run("tab.new", { name: key, argv: opt.agent.run, task, ...(folder ? { folder } : {}) });
-      notify({ title: "Jira", body: `Started ${opt.agent.name} for ${key}`, level: "info" });
+      await copyToClipboard(task);
+      run("tab.new", { name: key, argv: opt.agent.run, ...(folder ? { folder } : {}) });
+      notify({
+        title: "Jira",
+        body: `Started ${opt.agent.name} for ${key} (context in clipboard)`,
+        level: "info",
+      });
     }
     closeEditor(p, cx);
   });
+}
+
+/** @param {PanelView} p @param {Cx} cx */
+export function applyContext(p, cx) {
+  if (!p.data) return;
+  const live = agents().find((a) => a.focused) ?? agents()[0] ?? null;
+  if (live) {
+    const task = agentPrompt(p.data);
+    const key = p.key ?? p.data.key;
+    cx.spawn(async (cx) => {
+      await pasteContextToAgent({
+        target: live,
+        text: task,
+        key,
+        name: live.program?.name ?? live.app ?? null,
+      });
+      closeEditor(p, cx);
+    });
+  } else {
+    openEditor(p, "context", cx);
+  }
 }
 
 /** @param {PanelView} p @param {string} q @param {Cx} cx */

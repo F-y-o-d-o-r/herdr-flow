@@ -8,6 +8,7 @@ import { attachmentList, checklistView, customFields, fact, linkRow, richText, s
 import { commentRow } from "./commentReactionHelpers.js";
 import {
   applyAssign,
+  applyContext,
   applyField,
   applyTransition,
   closeEditor,
@@ -103,7 +104,7 @@ export function inlineEditorView(t, p) {
   }
   if (p.editMode === "context") {
     return box
-      .child(editHeader(t, p, "SEND ISSUE TO AGENT"))
+      .child(editHeader(t, p, "ADD CONTEXT TO AGENT"))
       .when(p.agentLoading, (e) => e.child(div().text_size(12).text_color(t.dim).child("Finding agents…")))
       .when(!p.agentLoading && !p.agentOptions.length, (e) =>
         e.child(div().text_size(12).text_color(t.dim).child("No agents found")),
@@ -170,7 +171,7 @@ export function issueTopBadges(t, p, i) {
     .font_semibold()
     .text_color(t.accent)
     .hover((e) => e.bg(t.selected))
-    .on_click((_e, cx) => openEditor(p, "context", cx))
+    .on_click((_e, cx) => applyContext(p, cx))
     .child("+ Context");
   return h_flex()
     .gap(6)

@@ -1,9 +1,10 @@
 // What the Jira card's keys do. Each function works on the screen (`s`) and its source (`s.jira`):
 // it sets s.busy while loading, then moves to the next step or closes.
-import { exec, hc, knownAgents, notify, run, setShared, spaces } from "herdr";
+import { agents, exec, hc, knownAgents, notify, run, setShared, spaces } from "herdr";
 import { workFolder } from "../folderHelpers.js";
 import { agentPrompt } from "./jiraFormatHelpers.js";
 import { refreshBarCounters } from "./counterBarView.js";
+import { pasteContextToAgent } from "./agentDraftHelpers.js";
 
 /** @typedef {import("../types.js").Cx} Cx */
 /** @typedef {import("../types.js").Person} Person */
@@ -31,6 +32,30 @@ async function step(s, cx, busy, work) {
   }
   s.busy = null;
   cx.notify();
+}
+
+/**
+ * Pastes issue context into the active agent's input line without submitting (no Enter).
+ * @param {JiraScreen} s
+ * @param {Cx} cx
+ */
+export function addContext(s, cx) {
+  step(s, cx, `Adding ${s.picked.key} context…`, async () => {
+    if (s.jira.demo) return s.close();
+    const full =
+      s.picked.description !== undefined
+        ? s.picked
+        : { ...s.picked, ...(await s.jira.issue(s.picked.key).catch(() => ({}))) };
+    const task = agentPrompt(full);
+    const target = s.here ?? agents().find((a) => a.focused) ?? agents()[0] ?? null;
+    await pasteContextToAgent({
+      target,
+      text: task,
+      key: s.picked.key,
+      name: target?.program?.name ?? target?.app ?? null,
+    });
+    s.close();
+  });
 }
 
 /**
