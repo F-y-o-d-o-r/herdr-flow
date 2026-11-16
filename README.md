@@ -129,8 +129,8 @@ Customize your counters in `~/.config/herdr-app/herdr-flow.jira.json` with custo
 - **Top-bar widget (`jira-bar`)**: add the optional `jira-bar` block (`props: { view: "bar" }`, snippet in
   `scripts/layout-snippets.json`) to your layout's top bar tabs row. It shows live `A` / `R` / `S` counts,
   opens that list on click, and polls in the background.
-- **Desktop toasts**: when new issues arrive on any monitored counter, Herdr posts a toast notification
-  with the issue key and summary (suppressed on initial startup, bundled if multiple arrive). Set
+- **Desktop toasts & system alerts**: when new issues arrive on any monitored counter, Herdr posts a toast notification
+  and a native OS desktop notification with sound (suppressed on initial startup, bundled if multiple arrive). Set
   `"notify": false` on any counter to silence its alerts.
 
 ### Issue card & actions

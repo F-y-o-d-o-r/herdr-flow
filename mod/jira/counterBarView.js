@@ -1,7 +1,7 @@
 // Top bar Jira counters widget (tabs-row): R/T/S badges with live counts.
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { appHome, notify, readTextFile, setShared, shared, theme } from "herdr";
+import { appHome, exec, notify, readTextFile, setShared, shared, theme, window } from "herdr";
 import { openScreenNow, panelExists, panelShows, togglePanel } from "../leader/leaderActionHelpers.js";
 import {
   COUNTERS_FILE,
@@ -89,6 +89,24 @@ function automationsButton(t) {
     );
 }
 
+const OSASCRIPT_NOTIFY =
+  'on run argv\ndisplay notification (item 2 of argv) with title (item 1 of argv) sound name "Glass"\nend run';
+
+/**
+ * Delivers an OS desktop notification with sound when supported.
+ * @param {import("./counterHelpers.js").CounterToast} toast
+ */
+async function postDesktopNotification(toast) {
+  const platform = window()?.platform;
+  if (platform === "macos") {
+    await exec("osascript", ["-e", OSASCRIPT_NOTIFY, toast.title, toast.body ?? ""]).catch(() => null);
+    return;
+  }
+  if (platform === "linux") {
+    await exec("notify-send", ["--app-name=Herdr", toast.title, toast.body ?? ""]).catch(() => null);
+  }
+}
+
 export class BarView {
   /** @type {CounterState[]} */
   items = [];
@@ -141,6 +159,7 @@ export class BarView {
         if (!jira.demo) {
           for (const toast of toasts) {
             notify(toast);
+            postDesktopNotification(toast);
           }
         }
       }
