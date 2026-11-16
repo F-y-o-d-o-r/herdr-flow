@@ -89,8 +89,35 @@ function automationsButton(t) {
     );
 }
 
-const OSASCRIPT_NOTIFY =
-  'on run argv\ndisplay notification (item 2 of argv) with title (item 1 of argv) sound name "Glass"\nend run';
+const BUNDLE = "dev.herdr.app";
+/** @type {string | null | undefined} */
+let macNotifier = undefined;
+/** @type {string | null | undefined} */
+let herdrAppBin = undefined;
+
+/**
+ * Finds terminal-notifier binary or null.
+ * @returns {Promise<string | null>}
+ */
+async function findMacNotifier() {
+  const candidates = ["terminal-notifier", "/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier"];
+  for (const bin of candidates) {
+    const res = await exec(bin, ["-help"]).catch(() => null);
+    if (res?.code === 0) return bin;
+  }
+  return null;
+}
+
+/**
+ * Finds herdr-app executable path or null.
+ * @returns {Promise<string | null>}
+ */
+async function findHerdrApp() {
+  const found = await exec("/bin/sh", ["-c", "command -v herdr-app"]).catch(() => null);
+  if (found?.code === 0 && found.stdout.trim()) return found.stdout.trim();
+  const res = await exec("herdr-app", ["--version"]).catch(() => null);
+  return res?.code === 0 ? "herdr-app" : null;
+}
 
 /**
  * Delivers an OS desktop notification with sound when supported.
@@ -99,7 +126,17 @@ const OSASCRIPT_NOTIFY =
 async function postDesktopNotification(toast) {
   const platform = window()?.platform;
   if (platform === "macos") {
-    await exec("osascript", ["-e", OSASCRIPT_NOTIFY, toast.title, toast.body ?? ""]).catch(() => null);
+    if (macNotifier === undefined) macNotifier = await findMacNotifier();
+    if (herdrAppBin === undefined) herdrAppBin = await findHerdrApp();
+    if (macNotifier) {
+      const args = ["-title", toast.title, "-message", toast.body ?? "", "-activate", BUNDLE, "-sound", "Glass"];
+      if (toast.key && herdrAppBin) {
+        args.push("-execute", `${herdrAppBin} do herdr-flow.show:${toast.key}`);
+      }
+      await exec(macNotifier, args).catch(() => null);
+      return;
+    }
+    await exec("afplay", ["/System/Library/Sounds/Glass.aiff"]).catch(() => null);
     return;
   }
   if (platform === "linux") {
@@ -158,7 +195,10 @@ export class BarView {
         this.seenKeys = seen;
         if (!jira.demo) {
           for (const toast of toasts) {
-            notify(toast);
+            notify({
+              ...toast,
+              ...(toast.key ? { action: { name: `herdr-flow.show:${toast.key}` } } : {}),
+            });
             postDesktopNotification(toast);
           }
         }

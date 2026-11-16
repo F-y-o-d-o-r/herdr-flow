@@ -23,7 +23,7 @@ export const COUNTERS_REFRESH = "herdrFlow.jiraCountersRefresh";
  */
 
 /**
- * @typedef {{ title: string, body: string, level: "info" | "success" | "warning" | "error" }} CounterToast
+ * @typedef {{ title: string, body: string, level: "info" | "success" | "warning" | "error", key?: string }} CounterToast
  */
 
 /** @type {JiraCounter[]} */
@@ -180,7 +180,8 @@ export function diffNewCounterIssues(prevKeysByCounter, nextCounters) {
     const notifyCfg = counter.notify;
     const title = notifyCfg?.title ?? `Jira [${counter.tag}] · ${counter.label}`;
     const level = notifyCfg?.level ?? "info";
-    toasts.push({ title, body: counterIssuesBody(newIssues), level });
+    const key = newIssues[0]?.key;
+    toasts.push({ title, body: counterIssuesBody(newIssues), level, ...(key ? { key } : {}) });
   }
 
   return { seen, toasts };

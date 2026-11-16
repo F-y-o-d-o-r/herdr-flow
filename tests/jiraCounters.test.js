@@ -196,6 +196,7 @@ test("diffNewCounterIssues: single new issue generates 1 toast", () => {
     title: "Jira [A] · Assigned",
     body: "ACME-2 · New issue summary",
     level: "info",
+    key: "ACME-2",
   });
 });
 
