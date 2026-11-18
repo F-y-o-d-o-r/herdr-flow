@@ -1,6 +1,7 @@
 // lazygit screen: the repo of the focused terminal, or of the program in it (nvim after its own
 // cd), opens lazygit in a new tab at once; else a list of the space's repos. p = Pull all.
 import { closeOverlay, focused, props, run, theme } from "herdr";
+import { ScrollHandle } from "gpui-base";
 import { openScreen } from "../leader/leaderActionHelpers.js";
 import { keyed, onListKey } from "../pickerKeyHelpers.js";
 import { SEARCH_FOOTER, centered, footer, header, screenCard } from "../pickerView.js";
@@ -28,6 +29,7 @@ const PULL_ALL = { key: "p", name: "⟳ Pull all repos", branch: "current branch
 
 export class LazygitScreen {
   /** @type {FocusHandle} */ handle = null;
+  /** @type {import("gpui-base").ScrollHandle | null} */ scroll = null;
   /** @type {Repo[] | null} */ repos = null;
   filter = "";
   searching = false;
@@ -40,6 +42,7 @@ export class LazygitScreen {
   /** @param {Cx} cx */
   init(cx) {
     this.handle = cx.focus_handle();
+    this.scroll = ScrollHandle.new();
     cx.timer.after(0, () => this.handle.focus());
     Object.assign(this, { repos: null, filter: "", searching: false, at: 0, error: null });
     cx.spawn(async (cx) => {
@@ -82,7 +85,10 @@ export class LazygitScreen {
      */
     const onKey = (e, cx) => {
       cx.stop_propagation();
-      if (onListKey(this, e, list, { act: (r) => this.pick(r), back: () => this.close() })) cx.notify();
+      if (onListKey(this, e, list, { act: (r) => this.pick(r), back: () => this.close() })) {
+        this.scroll?.scroll_to_item(this.at);
+        cx.notify();
+      }
     };
     const card = screenCard(t, { id: "herdr-flow-lazygit", width: 440, handle: this.handle, onKey })
       .child(header(t, this, "lazygit", "repo name"))
@@ -94,6 +100,7 @@ export class LazygitScreen {
           searching: this.searching,
           error: this.error,
           loading: !this.repos,
+          scroll: this.scroll,
           act: (r) => this.pick(r),
         }),
       )

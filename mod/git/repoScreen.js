@@ -4,6 +4,7 @@
 // (leader "repo:<action>") it runs <action> after the cd, or at once when the focused
 // terminal is already in a repo. All work finishes before the popup closes.
 import { closeOverlay, exec, focused, hc, notify, panes, props, run, setShared, shared, theme } from "herdr";
+import { ScrollHandle } from "gpui-base";
 import { runAction } from "../leader/leaderActionHelpers.js";
 import { keyed, onListKey } from "../pickerKeyHelpers.js";
 import { SEARCH_FOOTER, centered, footer, header, screenCard } from "../pickerView.js";
@@ -72,6 +73,7 @@ async function moveTo(path) {
 
 export class RepoScreen {
   /** @type {FocusHandle} */ handle = null;
+  /** @type {import("gpui-base").ScrollHandle | null} */ scroll = null;
   /** @type {Repo[] | null} */ repos = null;
   filter = "";
   searching = false;
@@ -89,6 +91,7 @@ export class RepoScreen {
    */
   init(cx, p = {}) {
     this.handle = cx.focus_handle();
+    this.scroll = ScrollHandle.new();
     cx.timer.after(0, () => this.handle.focus());
     Object.assign(this, {
       repos: null,
@@ -135,7 +138,10 @@ export class RepoScreen {
     const onKey = (e, cx) => {
       cx.stop_propagation();
       if (this.busy) return; // the cd is running; Esc would cut it off
-      if (onListKey(this, e, list, { act: (r) => this.choose(r), back: () => this.close() })) cx.notify();
+      if (onListKey(this, e, list, { act: (r) => this.choose(r), back: () => this.close() })) {
+        this.scroll?.scroll_to_item(this.at);
+        cx.notify();
+      }
     };
     const card = screenCard(t, { id: "herdr-flow-repo", width: 440, handle: this.handle, onKey })
       .child(header(t, this, "repo", "repo name"))
@@ -147,6 +153,7 @@ export class RepoScreen {
           searching: this.searching,
           error: this.error,
           loading: !this.repos,
+          scroll: this.scroll,
           act: (r) => this.choose(r),
         }),
       )

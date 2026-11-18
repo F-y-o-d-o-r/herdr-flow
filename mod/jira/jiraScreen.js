@@ -2,7 +2,7 @@
 // Mode: configurable counter lists (Review, Tasks, Sandbox) + History + search by key (/1307).
 // Card: preview, then t Take · m Move (then Reassign) · r Reassign · o browser · O side panel.
 import { div } from "gpui-kit";
-import { v_flex } from "gpui-base";
+import { ScrollHandle, v_flex } from "gpui-base";
 import { agents, appHome, closeOverlay, focused, props, readTextFile, setShared, shared, theme } from "herdr";
 import { currentIssueKey } from "./branchKeyHelpers.js";
 import { jiraSource } from "./jiraDataSource.js";
@@ -23,6 +23,7 @@ import { SEARCH_FOOTER, centered, footer, header, screenCard } from "../pickerVi
 
 export class JiraScreen {
   /** @type {FocusHandle} */ handle = null;
+  /** @type {import("gpui-base").ScrollHandle | null} */ scroll = null;
   /** @type {JiraSource} */ jira = null;
   step = "mode";
   list = /** @type {string | null} */ (null);
@@ -52,6 +53,7 @@ export class JiraScreen {
    */
   init(cx, p = {}) {
     this.handle = cx.focus_handle();
+    this.scroll = ScrollHandle.new();
     cx.timer.after(0, () => this.handle.focus());
     Object.assign(this, { step: "mode", list: null, filter: "", searching: false, at: 0, error: null, busy: null });
     Object.assign(this, { current: null, picked: null, options: [], afterMove: false, listIssues: new Map() });
@@ -227,19 +229,24 @@ export class JiraScreen {
     const before = this.filter;
     const redraw = onListKey(this, e, list, { act: (r) => r.act(cx), back: () => this.back(cx) });
     if (this.step === "assign" && this.filter !== before) searchPeople(this, cx);
-    if (redraw) cx.notify();
+    if (redraw) {
+      this.scroll?.scroll_to_item(this.at);
+      cx.notify();
+    }
   }
 
   render() {
     const t = /** @type {any} */ (theme());
     const list = this.rows();
     if (this.at >= list.length) this.at = Math.max(0, list.length - 1);
+    if (this.scroll && this.at >= 0) this.scroll.scroll_to_item(this.at);
     const loading = this.step === "issues" && !(this.list === "history" ? this.recent : this.listIssues.get(this.list));
     const note = this.step === "assign" ? this.note : null;
     const body = v_flex()
       .id("jira-list")
       .h(380)
       .overflow_y_scrollbar()
+      .when(Boolean(this.scroll), (e) => e.track_scroll(this.scroll))
       .gap(1)
       .when(Boolean(this.error || this.loadError), (e) =>
         e.child(

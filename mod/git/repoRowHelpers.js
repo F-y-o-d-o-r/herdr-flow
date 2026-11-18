@@ -8,13 +8,15 @@ import { badge } from "../pickerView.js";
 /**
  * @template {{ key?: string, name: string, branch?: string }} T
  * @param {import("../types.js").Theme} t
- * @param {{ id: string, list: T[], at: number, searching: boolean, error: string | null, loading: boolean, act: (r: T) => void }} view
+ * @param {{ id: string, list: T[], at: number, searching: boolean, error: string | null, loading: boolean, act: (r: T) => void, scroll?: import("gpui-base").ScrollHandle | null }} view
  */
-export function repoRows(t, { id, list, at, searching, error, loading, act }) {
+export function repoRows(t, { id, list, at, searching, error, loading, act, scroll }) {
+  if (scroll && at >= 0) scroll.scroll_to_item(at);
   return v_flex()
     .id(id)
     .h(380)
     .overflow_y_scrollbar()
+    .when(Boolean(scroll), (e) => e.track_scroll(scroll))
     .gap(1)
     .when(Boolean(error), (e) => e.child(div().p(8).text_color(t.dim).child(error)))
     .when(loading && !error, (e) => e.child(div().p(8).text_color(t.dim).child("Looking for repos…")))
