@@ -61,16 +61,16 @@ an empty floating block in the user's layout (`props: { role: "router" }`, snipp
 `scripts/layout-snippets.json`). It draws nothing and receives `herdr-flow.<command>`.
 Commands: `nvim-zoom`, `leader`, `git`, `repo`, `pull`, `jira`, `panel`, `card:<KEY>`,
 `list:<id>`, `show:<KEY>`, `bots-save`, `bots-restore`.
-The router also auto-restores open bot sessions across Herdr restarts: on startup (after a 1.5s delay)
-it restores saved agent sessions into candidate empty shell panes, and periodically (every 5 seconds)
-syncs active agent snapshots to `~/.config/herdr-app/data/herdr-flow/bots-session.json`.
+The router also auto-restores open bot and program sessions across Herdr restarts: on startup (after a 1.5s delay, polling every 1s up to 15 attempts until shells report `cwd`)
+it restores saved agent and non-shell program sessions into empty shell panes (adding `--continue` for `agy`/`claude`/`pi` and `resume --last` for `codex`), and on pane/agent changes (plus app close)
+syncs snapshots to `~/.config/herdr-app/data/herdr-flow/bots-session.json`.
 When installing for someone, tell them it goes into their layout, what it does, and that without it
 only such direct keys stop working (the leader works anyway). Never add it to a layout without asking.
 
 ## Files
 
 - `mod/` — the mod (installed as `mods/herdr-flow`). `main.js` picks the screen from props.
-- `mod/botSessionHelpers.js` — auto-save and auto-restore of open bot/agent sessions across Herdr restarts.
+- `mod/botSessionHelpers.js` & `mod/botSessionSnapshot.js` — auto-save and auto-restore of open agent/program sessions across Herdr restarts.
 - `mod/jira/` — Jira integration: counter bar, menus, card preview (`c Context` quick paste), side panel (`jira-view`) with 👍 comment reactions, inline editing (`mod/jira/sidePanelEditHelpers.js`: status transitions, assignee picker, pinned date field editor, and `+ Context` agent drafter), and configurable `fields` in `herdr-flow.jira.json`.
 - `tests/` — `node --test` for pure modules.
 - `scripts/install.sh` — install / update.

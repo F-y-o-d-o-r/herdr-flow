@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isSnapshotEqual, resolveAgentCommand, snapshotAgents } from "../mod/botSessionHelpers.js";
+import {
+  isSnapshotEqual,
+  resolveAgentCommand,
+  resolveProgramCommand,
+  snapshotAgents,
+  snapshotSessions,
+} from "../mod/botSessionSnapshot.js";
 
 /**
  * @param {string} address
@@ -192,4 +198,35 @@ test("isSnapshotEqual: compares snapshot lists correctly", () => {
   assert.equal(isSnapshotEqual([], []), true);
   assert.equal(isSnapshotEqual(null, []), false);
   assert.equal(isSnapshotEqual([], null), false);
+});
+
+test("resolveProgramCommand: uses foreground argv when non-shell, else program key/name", () => {
+  const lazygitPane = mockPane("p1", "t1", "/repo", null, "lazygit");
+  lazygitPane.program.shell = false;
+  assert.equal(resolveProgramCommand(lazygitPane, ["lazygit", "-p", "/my dir"]), "lazygit -p '/my dir'");
+  assert.equal(resolveProgramCommand(lazygitPane, ["/bin/zsh", "-l"]), "lazygit");
+
+  const customPane = mockPane("p2", "t2", "/app", null, "program");
+  customPane.program.name = "htop";
+  customPane.program.shell = false;
+  assert.equal(resolveProgramCommand(customPane, null), "htop");
+});
+
+test("snapshotSessions: captures both agents and non-shell programs, skips shells and mod panes", () => {
+  const agentsList = [mockAgent("t1", "p1", "claude-code", "working")];
+  const pAgent = mockPane("p1", "t1", "/code/a", "working", "claude-code");
+  const pLazygit = mockPane("p2", "t2", "/code/b", null, "lazygit");
+  pLazygit.program.shell = false;
+  const pShell = mockPane("p3", "t3", "/code/c", null, null);
+  const pMod = mockPane("p4", null, "/code/d", null, "mod");
+  pMod.program.shell = false;
+
+  const sessions = snapshotSessions(agentsList, [pAgent, pLazygit, pShell, pMod], null, {
+    t2: ["lazygit"],
+  });
+  assert.equal(sessions.length, 2);
+  assert.equal(sessions[0].pane, "p1");
+  assert.equal(sessions[0].command, "claude");
+  assert.equal(sessions[1].pane, "p2");
+  assert.equal(sessions[1].command, "lazygit");
 });

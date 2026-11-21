@@ -9,7 +9,7 @@ Keyboard-first velocity tools for the [Herdr](https://herdr.dev) desktop app, in
 - **Leader** — `ctrl-a` / `ctrl-;` then one key, with a cheat sheet.
 - **Git & repos** — pick a repo for the helper shell and panels, lazygit, pull all repos safely.
 - **Jira** — your issues, configurable counters, top bar badges, live issue card, quick reassign / move / hand to an agent, and a side panel with inline editing and `+ Context`.
-- **Bot sessions** — auto-saves open agent sessions across Herdr restarts and restores them into matching panes on startup.
+- **Bot & program sessions** — auto-saves open agent and program sessions across Herdr restarts and restores them into matching panes on startup (resuming supported agents with `--continue` / `resume --last`).
 
 Every list shows its key on the left, `/` searches, the footer lists the keys, and the Russian
 keyboard layout works too.
@@ -207,9 +207,9 @@ layout (`scripts/layout-snippets.json`):
   for one action inside herdr-flow needs it, e.g. `"cmd-e": "herdr-flow.nvim-zoom"`. Commands: `nvim-zoom`,
   `leader`, `git`, `repo`, `pull`, `jira`, `panel`, `card:<KEY>`, `list:<id>`, `show:<KEY>`, `bots-save`,
   `bots-restore`.
-  The router also automatically preserves running bot sessions across Herdr restarts: every 5 seconds it
-  snapshots active agent sessions into `~/.config/herdr-app/data/herdr-flow/bots-session.json`, and on Herdr
-  launch (1.5s delay) matches candidate shell panes by pane ID, tab, and directory to relaunch your agents.
+  The router also automatically preserves running agents and non-shell programs across Herdr restarts: whenever
+  panes or agents change (and on app close), it snapshots them into `~/.config/herdr-app/data/herdr-flow/bots-session.json`, and on Herdr
+  launch (after a 1.5s delay, polling every 1s until shells are ready) matches empty shell panes by pane ID, tab, and directory to relaunch them (resuming `agy`, `claude`, `pi` with `--continue` and `codex` with `resume --last`).
 - **jira-view** — the Jira side panel (`props: { view: "panel" }`).
 - **jira-bar** — top-bar badge counters (`props: { view: "bar" }`) with live issue counts and background new-issue toast alerts.
 

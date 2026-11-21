@@ -4,14 +4,15 @@
 // Commands: nvim-zoom (herdr-nvim's nvim + tree, nvim pane zoomed), leader, git, repo, pull, jira,
 // open-next (the screen the leader just asked for), panel (toggle the Jira side panel), card:<KEY>,
 // list:<assigned|history>, show:<KEY>, bots-save (snapshot agents), bots-restore (restore agents).
-// Also manages startup auto-restore of bot sessions and periodic background session sync.
+// Also manages startup auto-restore of bot/program sessions and event-driven session snapshots.
 import { div } from "gpui-kit";
-import { exec, nextCommand, run, setShared } from "herdr";
+import { agents, checking, exec, nextCommand, panes, run, setShared } from "herdr";
 import { MOD, openNvimZoomed, openScreenNow } from "./leader/leaderActionHelpers.js";
 import { PANEL } from "./jira/issueActionSteps.js";
-import { autoRestoreBots, syncBotSnapshot } from "./botSessionHelpers.js";
+import { autoRestoreBots, runStartupRestore, syncBotSnapshot } from "./botSessionHelpers.js";
 
 const SCREEN_COMMANDS = new Set(["leader", "git", "repo", "pull", "jira"]);
+const SNAPSHOT_DEBOUNCE_MS = 800;
 
 /** The leader asked for a screen while closing its popup: open it once that close has applied. */
 async function openNextAfterClose() {
@@ -36,16 +37,27 @@ async function routeCommand(command) {
   if (SCREEN_COMMANDS.has(command)) openScreenNow(command);
 }
 
+/** @returns {string} */
+function paneSignature() {
+  const paneSig = panes()
+    .map((p) => `${p.pane}:${p.terminal ?? ""}:${p.cwd ?? ""}:${p.program?.key ?? ""}:${p.program?.name ?? ""}`)
+    .join("|");
+  const agentSig = agents()
+    .map((a) => `${a.pane}:${a.app ?? ""}`)
+    .join("|");
+  return `${paneSig}#${agentSig}`;
+}
+
 export class RouterView {
   /** @param {import("./types.js").Cx} cx */
   init(cx) {
-    cx.spawn(async () => {
-      await exec("sleep", ["1.5"]).catch(() => null);
-      await autoRestoreBots().catch(() => null);
-    });
+    /** @type {string} */
+    this.lastSig = "";
+    this.syncGen = 0;
+    if (checking()) return;
 
-    cx.timer.every(5000, async () => {
-      await syncBotSnapshot().catch(() => null);
+    cx.spawn(async (asyncCx) => {
+      await runStartupRestore(asyncCx).catch(() => null);
     });
 
     cx.spawn(async () => {
@@ -56,7 +68,22 @@ export class RouterView {
     });
   }
 
-  render() {
+  /** @param {import("./types.js").Cx} cx */
+  render(cx) {
+    if (!checking()) {
+      const sig = paneSignature();
+      if (sig !== this.lastSig) {
+        this.lastSig = sig;
+        const gen = ++this.syncGen;
+        cx.timer.after(SNAPSHOT_DEBOUNCE_MS, () => {
+          if (gen === this.syncGen) void syncBotSnapshot().catch(() => null);
+        });
+      }
+    }
     return div();
+  }
+
+  async onClose() {
+    if (!checking()) await syncBotSnapshot().catch(() => null);
   }
 }

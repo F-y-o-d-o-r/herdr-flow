@@ -18,7 +18,7 @@ import { RouterView } from "./router.js";
 /** @typedef {import("./types.js").Cx} Cx */
 /**
  * A screen view: init(cx, props) once, then render(cx).
- * @typedef {{ init(cx: Cx, props?: Record<string, any>): void, render(cx: Cx): import("gpui-kit").Element }} Screen
+ * @typedef {{ init(cx: Cx, props?: Record<string, any>): void, render(cx: Cx): import("gpui-kit").Element, onClose?(cx: Cx): Promise<void> | void }} Screen
  */
 
 /**
@@ -72,5 +72,10 @@ export default class HerdrFlow extends View {
   /** @param {Cx} cx */
   render(cx) {
     return this.view ? this.view.render(cx) : div();
+  }
+
+  /** @param {Cx} cx */
+  async close(cx) {
+    await this.view?.onClose?.(cx);
   }
 }

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { planRestoration } from "../mod/botSessionHelpers.js";
+import { withResumeFlag } from "../mod/botSessionSnapshot.js";
 
 test("planRestoration: prioritizes pane+cwd match, tab+cwd, then cwd only", () => {
   /** @type {import("../mod/types.js").BotSession[]} */
@@ -234,4 +235,87 @@ test("planRestoration: skips active agents, non-terminals, and avoids duplicates
   const plan = planRestoration(saved, currentPanes, currentAgents);
   assert.equal(plan.length, 1);
   assert.equal(plan[0].terminal, "term-free");
+});
+
+test("planRestoration: skips non-shell programs and falls back to pane/tab with cd", () => {
+  /** @type {import("../mod/types.js").BotSession[]} */
+  const saved = [
+    {
+      pane: "p1",
+      tab: "tab1",
+      tab_name: "T1",
+      space: "s1",
+      space_name: "S1",
+      cwd: "/code/alpha",
+      app: null,
+      command: "lazygit",
+    },
+    {
+      pane: "p2",
+      tab: "tab2",
+      tab_name: "T2",
+      space: "s1",
+      space_name: "S1",
+      cwd: "/code/beta",
+      app: "claude-code",
+      command: "claude",
+    },
+  ];
+
+  const currentPanes = [
+    // p1 is already running a non-shell program (status is null, shell is false) -> must be skipped
+    {
+      pane: "p1",
+      terminal: "term-1",
+      tab: "tab1",
+      title: "lazygit",
+      cwd: "/code/alpha",
+      branch: null,
+      status: null,
+      app: null,
+      program: {
+        key: "lazygit",
+        name: "lazygit",
+        icon: null,
+        tint: false,
+        tile: null,
+        color: null,
+        shell: false,
+        agent: false,
+      },
+      focused: false,
+      zoomed: false,
+      movable: true,
+    },
+    // tab2 opened at space root /code instead of /code/beta -> fallback by tab + prepend cd
+    {
+      pane: "p9",
+      terminal: "term-2",
+      tab: "tab2",
+      title: "zsh",
+      cwd: "/code",
+      branch: null,
+      status: null,
+      app: null,
+      program: { key: "zsh", name: "zsh", icon: null, tint: false, tile: null, color: null, shell: true, agent: false },
+      focused: false,
+      zoomed: false,
+      movable: true,
+    },
+  ];
+
+  const plan = planRestoration(saved, currentPanes, []);
+  assert.equal(plan.length, 1);
+  assert.equal(plan[0].terminal, "term-2");
+  assert.equal(plan[0].command, "cd /code/beta && claude");
+});
+
+test("withResumeFlag: adds --continue or resume --last for supported agents", () => {
+  assert.equal(withResumeFlag("agy"), "agy --continue");
+  assert.equal(withResumeFlag("claude"), "claude --continue");
+  assert.equal(withResumeFlag("pi"), "pi --continue");
+  assert.equal(withResumeFlag("codex --no-daemon"), "codex resume --last");
+  assert.equal(withResumeFlag("cd /code/beta && claude"), "cd /code/beta && claude --continue");
+  assert.equal(withResumeFlag("claude --resume id-1"), "claude --resume id-1");
+  assert.equal(withResumeFlag("lazygit"), "lazygit");
 });
